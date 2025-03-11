@@ -61,9 +61,9 @@ npm start
 
 ### VPS部署 (Ubuntu)
 
-1. 在服务器上克隆仓库并安装依赖
+1. 在服务器上克隆仓库并安装依赖 和 更新
 ```bash
-git clone <repository-url>
+git clone https://github.com/lingki1/ainovel
 cd ainovel
 #install NVM
 curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
@@ -71,6 +71,12 @@ nvm install --lts
 node -v
 npm -v
 ```
+1.1服务器更新
+cd /ainovel
+git pull origin main
+npm install
+npm run build
+pm2 restart ainovel
 
 2. 创建环境变量文件
 ```bash
