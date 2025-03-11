@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse } from '@/types';
-import { generateStoryOptions } from '@/lib/ai';
+import { ApiResponse, ApiProvider } from '@/types';
+import { generateStoryOptions, setApiProvider, getApiProvider } from '@/lib/ai';
 import { formatStoryToText } from '@/utils';
 import { getUser } from '@/lib/dataService';
 
@@ -40,6 +40,21 @@ export async function POST(request: NextRequest) {
         success: false,
         error: '故事不存在'
       }, { status: 404 });
+    }
+
+    // 设置用户选择的API提供商
+    if (user.apiSettings?.provider) {
+      console.log(`设置API提供商: ${user.apiSettings.provider}`);
+      
+      // 确保provider是有效的ApiProvider枚举值
+      let provider = user.apiSettings.provider;
+      if (provider !== ApiProvider.DEEPSEEK && provider !== ApiProvider.GOOGLE) {
+        console.warn(`无效的API提供商: ${provider}，使用默认值: ${ApiProvider.DEEPSEEK}`);
+        provider = ApiProvider.DEEPSEEK;
+      }
+      
+      setApiProvider(provider as ApiProvider);
+      console.log(`设置后的API提供商: ${getApiProvider()}`);
     }
 
     // 将故事内容转换为文本

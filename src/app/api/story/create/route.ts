@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse, Story, StoryContent } from '@/types';
+import { ApiResponse, Story, StoryContent, ApiProvider } from '@/types';
 import { generateId, formatDate } from '@/utils';
-import { generateStoryBeginning } from '@/lib/ai';
+import { generateStoryBeginning, setApiProvider, getApiProvider } from '@/lib/ai';
 import { getUser, saveUser } from '@/lib/dataService';
 
 export async function POST(request: NextRequest) {
@@ -32,6 +32,21 @@ export async function POST(request: NextRequest) {
         success: false,
         error: '角色不存在'
       }, { status: 404 });
+    }
+
+    // 设置用户选择的API提供商
+    if (user.apiSettings?.provider) {
+      console.log(`设置API提供商: ${user.apiSettings.provider}`);
+      
+      // 确保provider是有效的ApiProvider枚举值
+      let provider = user.apiSettings.provider;
+      if (provider !== ApiProvider.DEEPSEEK && provider !== ApiProvider.GOOGLE) {
+        console.warn(`无效的API提供商: ${provider}，使用默认值: ${ApiProvider.DEEPSEEK}`);
+        provider = ApiProvider.DEEPSEEK;
+      }
+      
+      setApiProvider(provider as ApiProvider);
+      console.log(`设置后的API提供商: ${getApiProvider()}`);
     }
 
     // 使用AI生成故事开端，传递角色属性

@@ -1,6 +1,16 @@
 export interface User {
   email: string;
   characters: Character[];
+  apiSettings?: ApiSettings;
+}
+
+export interface ApiSettings {
+  provider: ApiProvider;
+}
+
+export enum ApiProvider {
+  DEEPSEEK = 'deepseek',
+  GOOGLE = 'google'
 }
 
 export interface Character {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User, Character, Story } from '@/types';
+import { User, Character, Story, ApiSettings } from '@/types';
 
 interface UserState {
   user: User | null;
@@ -15,6 +15,9 @@ interface UserState {
   setCurrentStory: (story: Story | null) => void;
   setLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
+  
+  // API设置操作
+  updateApiSettings: (apiSettings: ApiSettings) => void;
   
   // 角色操作
   addCharacter: (character: Character) => void;
@@ -48,6 +51,19 @@ export const useUserStore = create<UserState>()(
       setCurrentStory: (currentStory) => set({ currentStory }),
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
+      
+      updateApiSettings: (apiSettings) => 
+        set((state) => ({
+          user: state.user 
+            ? { 
+                ...state.user, 
+                apiSettings: {
+                  ...state.user.apiSettings,
+                  ...apiSettings
+                }
+              } 
+            : null
+        })),
       
       addCharacter: (character) => 
         set((state) => ({

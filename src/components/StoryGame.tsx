@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
 import { formatDate } from '@/utils';
+import { ApiProvider } from '@/types';
+import { setApiProvider, getApiProvider } from '@/lib/ai';
 
 export default function StoryGame() {
   const [options, setOptions] = useState<string[]>([]);
@@ -13,6 +15,8 @@ export default function StoryGame() {
   const [error, setError] = useState('');
   const [customOption, setCustomOption] = useState('');
   const [showCustomOption, setShowCustomOption] = useState(false);
+  const [lastContentId, setLastContentId] = useState<string | null>(null);
+  const [currentApiProvider, setCurrentApiProvider] = useState<string>('');
   
   // 故事内容滚动区域的引用
   const storyContentRef = useRef<HTMLDivElement>(null);
@@ -21,15 +25,35 @@ export default function StoryGame() {
     user,
     currentCharacter, 
     currentStory, 
-    updateStory 
+    updateStory,
+    updateApiSettings
   } = useUserStore();
+
+  // 当组件加载时，设置当前API提供商
+  useEffect(() => {
+    if (user?.apiSettings?.provider) {
+      console.log('组件加载时设置API提供商:', user.apiSettings.provider);
+      setApiProvider(user.apiSettings.provider);
+      setCurrentApiProvider(user.apiSettings.provider);
+    }
+  }, [user]);
 
   // 当故事内容更新时，滚动到最新内容
   useEffect(() => {
     if (storyContentRef.current && currentStory?.content) {
-      storyContentRef.current.scrollTop = storyContentRef.current.scrollHeight;
+      // 如果有新内容添加，滚动到新内容的开始位置
+      if (lastContentId && currentStory.content.length > 0) {
+        const newContentIndex = currentStory.content.findIndex(item => item.id === lastContentId);
+        if (newContentIndex >= 0 && newContentIndex < currentStory.content.length - 1) {
+          // 找到新内容的DOM元素
+          const newContentElement = document.querySelector(`[data-content-id="${currentStory.content[newContentIndex + 1].id}"]`);
+          if (newContentElement) {
+            newContentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      }
     }
-  }, [currentStory?.content]);
+  }, [currentStory?.content, lastContentId]);
 
   const handleGenerateOptions = async () => {
     if (!currentStory || !currentCharacter || !user) return;
@@ -39,6 +63,9 @@ export default function StoryGame() {
     setShowCustomOption(false);
     
     try {
+      // 确保使用当前选择的API提供商
+      console.log('生成选项前的API提供商:', getApiProvider());
+      
       const response = await axios.post('/api/story/options', {
         storyContent: currentStory.content,
         characterName: currentCharacter.name,
@@ -67,6 +94,14 @@ export default function StoryGame() {
     setIsLoadingContinue(true);
     
     try {
+      // 确保使用当前选择的API提供商
+      console.log('继续故事前的API提供商:', getApiProvider());
+      
+      // 记录当前最后一个内容的ID，用于滚动定位
+      if (currentStory.content.length > 0) {
+        setLastContentId(currentStory.content[currentStory.content.length - 1].id);
+      }
+      
       const response = await axios.post('/api/story/continue', {
         storyContent: currentStory.content,
         choice,
@@ -108,6 +143,38 @@ export default function StoryGame() {
     }
   };
 
+  // 切换API提供商
+  const handleChangeApiProvider = async (provider: ApiProvider) => {
+    if (!user) return;
+    
+    try {
+      console.log('切换API提供商:', provider);
+      
+      // 更新用户的API设置
+      updateApiSettings({ provider });
+      
+      // 设置AI服务的当前提供商
+      setApiProvider(provider);
+      setCurrentApiProvider(provider);
+      
+      // 向服务器发送更新请求
+      const response = await axios.post('/api/auth/updateSettings', {
+        email: user.email,
+        apiSettings: { provider }
+      });
+      
+      if (response.data.success) {
+        console.log('API提供商更新成功:', response.data.data.provider);
+      } else {
+        console.error('API提供商更新失败:', response.data.error);
+        setError('更新API提供商失败');
+      }
+    } catch (error) {
+      console.error('更新API提供商时出错:', error);
+      setError('更新API提供商失败，请稍后再试');
+    }
+  };
+
   if (!currentStory || !currentCharacter) {
     return (
       <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
@@ -121,13 +188,47 @@ export default function StoryGame() {
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center mb-6">故事游戏</h2>
       
+      {/* API提供商选择 */}
+      {user && (
+        <div className="mb-6">
+          <h3 className="text-sm font-medium mb-2">选择AI提供商:</h3>
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
+              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                user.apiSettings?.provider === ApiProvider.DEEPSEEK 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Deepseek
+            </button>
+            <button
+              onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
+              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                user.apiSettings?.provider === ApiProvider.GOOGLE 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Google
+            </button>
+          </div>
+          <div className="mt-1 text-xs text-gray-500">
+            当前API提供商: {user.apiSettings?.provider || '未设置'} | 
+            内存中的提供商: {currentApiProvider || '未设置'} | 
+            AI服务中的提供商: {getApiProvider()}
+          </div>
+        </div>
+      )}
+      
       {/* 故事内容滚动区域 */}
       <div 
         ref={storyContentRef}
         className="mb-6 prose max-w-none h-96 overflow-y-auto border border-gray-200 rounded-lg p-4"
       >
         {currentStory.content.map((item) => (
-          <div key={item.id} className="mb-4">
+          <div key={item.id} data-content-id={item.id} className="mb-4 story-item">
             {item.type === 'ai' ? (
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <p className="whitespace-pre-line">{item.text}</p>

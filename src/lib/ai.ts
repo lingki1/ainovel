@@ -1,15 +1,41 @@
 import axios from 'axios';
+import { ApiProvider } from '@/types';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // 环境变量中的API密钥，或者使用提供的密钥
-const API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f';
-const API_URL = 'https://api.deepseek.com/v1/chat/completions';
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f';
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || 'AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0';
 
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
+// 默认API提供商
+let currentProvider: ApiProvider = ApiProvider.DEEPSEEK;
+
+// 设置API提供商
+export function setApiProvider(provider: ApiProvider) {
+  console.log(`API提供商已切换为: ${provider}`);
+  // 确保provider是有效的ApiProvider枚举值
+  if (provider === ApiProvider.DEEPSEEK || provider === ApiProvider.GOOGLE) {
+    currentProvider = provider;
+  } else {
+    console.warn(`无效的API提供商: ${provider}，使用默认值: ${ApiProvider.DEEPSEEK}`);
+    currentProvider = ApiProvider.DEEPSEEK;
+  }
+}
+
+// 获取当前API提供商
+export function getApiProvider(): ApiProvider {
+  return currentProvider;
+}
+
+// 消息接口
 interface Message {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
 
-interface CompletionResponse {
+// Deepseek API响应接口
+interface DeepseekCompletionResponse {
   id: string;
   object: string;
   created: number;
@@ -30,7 +56,7 @@ interface CompletionResponse {
 }
 
 /**
- * 生成故事开端
+ * 生成故事开头
  */
 export async function generateStoryBeginning(
   keywords: string[], 
@@ -53,24 +79,24 @@ ${attributesText}
 4. 可以包含场景和情节的简单介绍
 5. 为后续故事发展留下悬念和可能性
 6. 故事内容要详细生动，有丰富的描写和对话
-7. 主角的性格和行为应该符合其属性特征
 `;
 
-  const systemPrompt = attributes.length > 0
-    ? `你是一位专业的小说创作AI，擅长根据关键词创作引人入胜的故事。请以"${characterName}"为主角创作故事。主角具有以下属性：${attributes.join('，')}。请确保故事中的主角性格和行为与这些属性相符。`
-    : `你是一位专业的小说创作AI，擅长根据关键词创作引人入胜的故事。请以"${characterName}"为主角创作故事。`;
-
   const messages: Message[] = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: prompt }
+    {
+      role: 'system',
+      content: `你是一位专业的小说创作AI，擅长根据关键词创作故事开头。请确保故事以"${characterName}"为主角。${attributesText ? `主角具有以下属性：${attributes.join('，')}。请确保故事中的主角性格和行为与这些属性相符。` : ''}`
+    },
+    {
+      role: 'user',
+      content: prompt
+    }
   ];
 
   try {
-    const response = await callDeepseekAPI(messages);
-    return response;
+    return await callAI(messages);
   } catch (error) {
-    console.error('生成故事开端失败:', error);
-    throw new Error('生成故事开端失败，请稍后再试');
+    console.error('生成故事开头失败:', error);
+    throw new Error('生成故事开头失败，请稍后再试');
   }
 }
 
@@ -101,19 +127,25 @@ ${attributesText}
 6. 请直接列出5个选项，每行一个，不要有编号或其他格式
 `;
 
-  const systemPrompt = attributes.length > 0
-    ? `你是一位专业的小说创作AI，擅长为故事提供多样化的发展方向。请确保故事以"${characterName}"为主角。主角具有以下属性：${attributes.join('，')}。请确保故事发展方向与这些属性相符。`
-    : `你是一位专业的小说创作AI，擅长为故事提供多样化的发展方向。请确保故事以"${characterName}"为主角。`;
-
   const messages: Message[] = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: prompt }
+    {
+      role: 'system',
+      content: `你是一位专业的小说创作AI，擅长为故事提供多样化的发展方向。请确保故事以"${characterName}"为主角。${attributesText ? `主角具有以下属性：${attributes.join('，')}。请确保故事发展方向与这些属性相符。` : ''}`
+    },
+    {
+      role: 'user',
+      content: prompt
+    }
   ];
 
   try {
-    const response = await callDeepseekAPI(messages);
-    // 分割响应为单独的选项
-    return response.split('\n').filter(line => line.trim().length > 0).slice(0, 5);
+    const response = await callAI(messages);
+    // 将响应拆分为选项数组
+    return response
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0 && !line.startsWith('[') && !line.endsWith(']'))
+      .slice(0, 5); // 确保最多返回5个选项
   } catch (error) {
     console.error('生成故事选项失败:', error);
     throw new Error('生成故事选项失败，请稍后再试');
@@ -121,7 +153,7 @@ ${attributesText}
 }
 
 /**
- * 根据选择继续故事
+ * 继续故事
  */
 export async function continueStory(
   storyContext: string, 
@@ -155,18 +187,19 @@ ${attributesText}
 8. 直接输出故事内容，不要加入其他说明
 `;
 
-  const systemPrompt = attributes.length > 0
-    ? `你是一位专业的小说创作AI，擅长根据读者选择继续发展故事情节。请确保故事以"${characterName}"为主角。主角具有以下属性：${attributes.join('，')}。请确保故事中的主角性格和行为与这些属性相符。`
-    : `你是一位专业的小说创作AI，擅长根据读者选择继续发展故事情节。请确保故事以"${characterName}"为主角。`;
-
   const messages: Message[] = [
-    { role: 'system', content: systemPrompt },
-    { role: 'user', content: prompt }
+    {
+      role: 'system',
+      content: `你是一位专业的小说创作AI，擅长根据读者选择继续发展故事情节。请确保故事以"${characterName}"为主角。${attributesText ? `主角具有以下属性：${attributes.join('，')}。请确保故事中的主角性格和行为与这些属性相符。` : ''}`
+    },
+    {
+      role: 'user',
+      content: prompt
+    }
   ];
 
   try {
-    const response = await callDeepseekAPI(messages);
-    return response;
+    return await callAI(messages);
   } catch (error) {
     console.error('继续故事失败:', error);
     throw new Error('继续故事失败，请稍后再试');
@@ -178,25 +211,122 @@ ${attributesText}
  */
 async function callDeepseekAPI(messages: Message[]): Promise<string> {
   try {
-    const response = await axios.post<CompletionResponse>(
-      API_URL,
+    console.log('正在调用Deepseek API...');
+    console.log('当前API提供商:', currentProvider);
+    
+    const response = await axios.post<DeepseekCompletionResponse>(
+      DEEPSEEK_API_URL,
       {
         model: 'deepseek-chat',
         messages,
         temperature: 0.7,
-        max_tokens: 4000, // 增加token上限以支持更长的文本生成
+        max_tokens: 2000,
       },
       {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
         }
       }
     );
 
-    return response.data.choices[0].message.content.trim();
+    // 添加API提供商标记
+    const content = response.data.choices[0].message.content;
+    return `${content}\n\n[由Deepseek API生成]`;
   } catch (error) {
     console.error('Deepseek API调用失败:', error);
     throw new Error('AI服务暂时不可用，请稍后再试');
+  }
+}
+
+/**
+ * 调用Google API
+ */
+async function callGoogleAPI(messages: Message[]): Promise<string> {
+  try {
+    console.log('正在调用Google API...');
+    console.log('当前API提供商:', currentProvider);
+    
+    // 使用Google官方客户端库
+    const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
+    // 使用gemini-1.5-pro模型，这是一个更强大的模型，适合生成创意内容
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    
+    // Google API不支持system角色，需要将system消息合并到user消息中
+    // 找到第一个非system消息
+    let firstNonSystemIndex = messages.findIndex(msg => msg.role !== 'system');
+    if (firstNonSystemIndex === -1) {
+      // 如果全是system消息，则将最后一条转为user消息
+      firstNonSystemIndex = messages.length - 1;
+    }
+    
+    // 收集所有system消息
+    const systemMessages = messages.filter((msg, index) => msg.role === 'system' && index < firstNonSystemIndex);
+    const systemContent = systemMessages.map(msg => msg.content).join('\n\n');
+    
+    // 创建新的消息数组，将system消息合并到第一个非system消息中
+    const googleMessages = [];
+    
+    for (let i = 0; i < messages.length; i++) {
+      if (i === firstNonSystemIndex && systemContent) {
+        // 将system内容添加到第一个非system消息前面
+        googleMessages.push({
+          role: messages[i].role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: `${systemContent}\n\n${messages[i].content}` }]
+        });
+      } else if (messages[i].role !== 'system' || i >= firstNonSystemIndex) {
+        // 添加非system消息或firstNonSystemIndex之后的所有消息
+        googleMessages.push({
+          role: messages[i].role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: messages[i].content }]
+        });
+      }
+    }
+    
+    console.log('处理后的消息格式:', JSON.stringify(googleMessages, null, 2));
+    
+    // 如果没有消息或第一条消息不是user角色，添加一个默认的user消息
+    if (googleMessages.length === 0 || googleMessages[0].role !== 'user') {
+      googleMessages.unshift({
+        role: 'user',
+        parts: [{ text: '请根据以下要求生成内容' }]
+      });
+    }
+    
+    // 使用直接生成内容的方式，而不是聊天会话
+    const result = await model.generateContent({
+      contents: googleMessages,
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4000,
+      }
+    });
+    
+    const content = result.response.text();
+    
+    // 添加API提供商标记
+    return `${content}\n\n[由Google API生成]`;
+  } catch (error) {
+    console.error('Google API调用失败:', error);
+    throw new Error('无法生成内容，请稍后再试');
+  }
+}
+
+/**
+ * 根据当前提供商调用相应的API
+ */
+async function callAI(messages: Message[]): Promise<string> {
+  console.log('调用AI服务，当前提供商:', currentProvider);
+  
+  // 确保currentProvider是有效的ApiProvider枚举值
+  if (currentProvider !== ApiProvider.DEEPSEEK && currentProvider !== ApiProvider.GOOGLE) {
+    console.warn(`无效的API提供商: ${currentProvider}，使用默认值: ${ApiProvider.DEEPSEEK}`);
+    currentProvider = ApiProvider.DEEPSEEK;
+  }
+  
+  if (currentProvider === ApiProvider.GOOGLE) {
+    return callGoogleAPI(messages);
+  } else {
+    return callDeepseekAPI(messages);
   }
 } 

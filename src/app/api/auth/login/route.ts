@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isValidEmail } from '@/utils';
-import { ApiResponse, User } from '@/types';
+import { ApiResponse, User, ApiProvider } from '@/types';
 import { getUser, saveUser } from '@/lib/dataService';
 
 export async function POST(request: NextRequest) {
@@ -23,7 +23,16 @@ export async function POST(request: NextRequest) {
     if (!user) {
       user = {
         email,
-        characters: []
+        characters: [],
+        apiSettings: {
+          provider: ApiProvider.DEEPSEEK // 默认使用Deepseek API
+        }
+      };
+      saveUser(user);
+    } else if (!user.apiSettings) {
+      // 如果是旧用户没有apiSettings属性，添加默认值
+      user.apiSettings = {
+        provider: ApiProvider.DEEPSEEK
       };
       saveUser(user);
     }
