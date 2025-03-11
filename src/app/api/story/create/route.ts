@@ -34,15 +34,20 @@ export async function POST(request: NextRequest) {
       }, { status: 404 });
     }
 
-    // 使用AI生成故事开端
-    const storyBeginning = await generateStoryBeginning(keywords, characterName);
+    // 使用AI生成故事开端，传递角色属性
+    const storyBeginning = await generateStoryBeginning(
+      keywords, 
+      characterName,
+      character.attributes
+    );
     
     // 创建故事内容
     const storyContent: StoryContent = {
       id: generateId(),
       text: storyBeginning,
       type: 'ai',
-      timestamp: formatDate()
+      timestamp: formatDate(),
+      wordCount: 1000 // 设置初始故事的字数
     };
 
     // 创建新故事

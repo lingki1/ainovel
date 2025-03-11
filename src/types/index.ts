@@ -6,6 +6,7 @@ export interface User {
 export interface Character {
   id: string;
   name: string;
+  attributes: string[];
   createdAt: string;
   stories: Story[];
 }

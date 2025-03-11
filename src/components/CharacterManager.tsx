@@ -5,8 +5,13 @@ import { useUserStore } from '@/lib/store/userStore';
 import { Character } from '@/types';
 import axios from 'axios';
 
-export default function CharacterManager() {
+interface CharacterManagerProps {
+  onCharacterSelected?: () => void;
+}
+
+export default function CharacterManager({ onCharacterSelected }: CharacterManagerProps) {
   const [newCharacterName, setNewCharacterName] = useState('');
+  const [newCharacterAttributes, setNewCharacterAttributes] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -43,12 +48,14 @@ export default function CharacterManager() {
     try {
       const response = await axios.post('/api/auth/character', {
         name: newCharacterName,
-        email: user.email
+        email: user.email,
+        attributes: newCharacterAttributes
       });
       
       if (response.data.success && response.data.data) {
         addCharacter(response.data.data);
         setNewCharacterName('');
+        setNewCharacterAttributes('');
       } else {
         setError(response.data.error || '创建角色失败');
       }
@@ -62,6 +69,9 @@ export default function CharacterManager() {
 
   const handleSelectCharacter = (character: Character) => {
     setCurrentCharacter(character);
+    if (onCharacterSelected) {
+      onCharacterSelected();
+    }
   };
 
   const handleDeleteCharacter = async (characterId: string) => {
@@ -92,14 +102,14 @@ export default function CharacterManager() {
 
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">角色管理</h2>
+      <h2 className="text-2xl font-bold text-center mb-6">角色管理</h2>
       
       {/* 角色列表 */}
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-700 mb-3">您的角色</h3>
+        <h3 className="text-lg font-medium mb-3">您的角色</h3>
         
         {user?.characters.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">您还没有创建任何角色</p>
+          <p className="text-center py-4">您还没有创建任何角色</p>
         ) : (
           <div className="space-y-3">
             {user?.characters.map((character) => (
@@ -112,10 +122,16 @@ export default function CharacterManager() {
               >
                 <div>
                   <h4 className="font-medium">{character.name}</h4>
-                  <p className="text-sm text-gray-500">
+                  {character.attributes && character.attributes.length > 0 && (
+                    <p className="text-sm mt-1">
+                      <span className="font-medium">属性: </span>
+                      {character.attributes.join(', ')}
+                    </p>
+                  )}
+                  <p className="text-sm mt-1">
                     创建于 {new Date(character.createdAt).toLocaleDateString()}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm">
                     {character.stories.length} 个故事
                   </p>
                 </div>
@@ -140,8 +156,8 @@ export default function CharacterManager() {
       {user && user.characters && user.characters.length < 2 && (
         <form onSubmit={handleCreateCharacter} className="space-y-4">
           <div>
-            <label htmlFor="characterName" className="block text-sm font-medium text-gray-700 mb-1">
-              新角色名称
+            <label htmlFor="characterName" className="block text-sm font-medium mb-1">
+              角色名称
             </label>
             <input
               id="characterName"
@@ -152,6 +168,23 @@ export default function CharacterManager() {
               className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
               required
             />
+          </div>
+          
+          <div>
+            <label htmlFor="characterAttributes" className="block text-sm font-medium mb-1">
+              角色属性 (用空格分隔)
+            </label>
+            <input
+              id="characterAttributes"
+              type="text"
+              value={newCharacterAttributes}
+              onChange={(e) => setNewCharacterAttributes(e.target.value)}
+              placeholder="例如: 勇敢 聪明 善良 坚强"
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800"
+            />
+            <p className="mt-1 text-sm">
+              角色属性将影响AI生成故事的情节判断
+            </p>
           </div>
           
           {error && (

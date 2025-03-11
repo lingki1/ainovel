@@ -65,7 +65,11 @@ npm start
 ```bash
 git clone <repository-url>
 cd ainovel
-npm install
+#install NVM
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.4/install.sh | bash
+nvm install --lts
+node -v
+npm -v
 ```
 
 2. 创建环境变量文件
@@ -97,6 +101,18 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+    }
+
+    location /_next/static/ {
+        alias /var/www/ainovel/.next/static/;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+    }
+
+    location /public/ {
+        alias /var/www/ainovel/public/;
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
     }
 }
 ```

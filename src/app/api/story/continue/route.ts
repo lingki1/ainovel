@@ -45,8 +45,14 @@ export async function POST(request: NextRequest) {
     // 将故事内容转换为文本
     const storyText = formatStoryToText(storyContent);
     
-    // 使用AI继续故事
-    const continuedStory = await continueStory(storyText, choice, wordCount, characterName);
+    // 使用AI继续故事，传递角色属性
+    const continuedStory = await continueStory(
+      storyText, 
+      choice, 
+      wordCount, 
+      characterName,
+      character.attributes
+    );
 
     // 创建玩家选择内容
     const playerChoice: StoryContent = {

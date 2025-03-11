@@ -7,7 +7,7 @@ import { getUser, saveUser } from '@/lib/dataService';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, email } = body;
+    const { name, email, attributes } = body;
 
     if (!name || !email) {
       return NextResponse.json<ApiResponse<null>>({
@@ -33,10 +33,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // 处理角色属性
+    const characterAttributes = attributes ? 
+      attributes.split(/\s+/).filter((attr: string) => attr.trim().length > 0) : 
+      [];
+
     // 创建新角色
     const newCharacter: Character = {
       id: generateId(),
       name,
+      attributes: characterAttributes,
       createdAt: formatDate(),
       stories: []
     };

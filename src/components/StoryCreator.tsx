@@ -4,7 +4,11 @@ import { useState } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
 
-export default function StoryCreator() {
+interface StoryCreatorProps {
+  onStoryCreated?: () => void;
+}
+
+export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
   const [keywords, setKeywords] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -61,6 +65,10 @@ export default function StoryCreator() {
         addStory(currentCharacter.id, newStory);
         setCurrentStory(newStory);
         setKeywords('');
+        
+        if (onStoryCreated) {
+          onStoryCreated();
+        }
       } else {
         setError(response.data.error || '创建故事失败');
       }

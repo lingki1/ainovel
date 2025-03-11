@@ -4,7 +4,11 @@ import { useUserStore } from '@/lib/store/userStore';
 import { Story } from '@/types';
 import { truncateString } from '@/utils';
 
-export default function StoryList() {
+interface StoryListProps {
+  onStorySelected?: () => void;
+}
+
+export default function StoryList({ onStorySelected }: StoryListProps) {
   const { 
     currentCharacter, 
     currentStory,
@@ -13,6 +17,9 @@ export default function StoryList() {
 
   const handleSelectStory = (story: Story) => {
     setCurrentStory(story);
+    if (onStorySelected) {
+      onStorySelected();
+    }
   };
 
   if (!currentCharacter) {

@@ -45,8 +45,12 @@ export async function POST(request: NextRequest) {
     // 将故事内容转换为文本
     const storyText = formatStoryToText(storyContent);
     
-    // 使用AI生成故事选项
-    const options = await generateStoryOptions(storyText, characterName);
+    // 使用AI生成故事选项，传递角色属性
+    const options = await generateStoryOptions(
+      storyText, 
+      characterName,
+      character.attributes
+    );
 
     return NextResponse.json<ApiResponse<string[]>>({
       success: true,

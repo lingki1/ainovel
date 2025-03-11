@@ -73,7 +73,8 @@ export default function StoryViewer() {
         </p>
       </div>
       
-      <div className="prose max-w-none">
+      {/* 故事内容滚动区域 */}
+      <div className="prose max-w-none h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
         {currentStory.content.map((item) => (
           <div key={item.id} className="mb-6">
             {item.type === 'ai' ? (
@@ -81,7 +82,7 @@ export default function StoryViewer() {
                 <p className="whitespace-pre-line">{item.text}</p>
               </div>
             ) : (
-              <div className="bg-highlight-color p-3 rounded border-l-4 border-highlight-border">
+              <div className="bg-highlight-color p-3 rounded-lg border-l-4 border-highlight-border">
                 <p className="font-medium">选择: {item.selectedChoice}</p>
               </div>
             )}
