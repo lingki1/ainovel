@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f3f3f3;
+  --foreground: #333333;
+  --input-background: #ffffff;
+  --input-text: #333333;
+  --card-background: #ffffff;
+  --card-text: #333333;
+  --border-color: #d1d1d1;
+  --primary-color: #43853d;
+  --secondary-color: #026e00;
+  --highlight-color: #f1f8e9;
+  --highlight-border: #43853d;
 }
 
 @theme inline {
@@ -14,8 +23,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1e1e1e;
+    --foreground: #cccccc;
+    --input-background: #2d2d2d;
+    --input-text: #cccccc;
+    --card-background: #252526;
+    --card-text: #cccccc;
+    --border-color: #3e3e3e;
+    --primary-color: #6cc24a;
+    --secondary-color: #43853d;
+    --highlight-color: #2c3c22;
+    --highlight-border: #6cc24a;
   }
 }
 
@@ -23,4 +41,130 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 确保所有输入框文本颜色可见 */
+input, textarea, select {
+  color: var(--input-text);
+  background-color: var(--input-background);
+}
+
+/* 确保卡片背景色和文本颜色 */
+.bg-white {
+  background-color: var(--card-background);
+}
+
+.text-gray-800 {
+  color: var(--card-text);
+}
+
+.text-gray-700 {
+  color: var(--card-text);
+}
+
+.text-gray-600 {
+  color: var(--card-text);
+}
+
+.text-gray-500 {
+  color: var(--card-text);
+}
+
+/* 确保边框颜色 */
+.border, .border-gray-200, .border-gray-300 {
+  border-color: var(--border-color);
+}
+
+/* 确保按钮文本颜色 */
+button {
+  color: inherit;
+}
+
+/* 确保故事选项文本颜色 */
+.story-option {
+  color: var(--input-text);
+  background-color: var(--input-background);
+}
+
+/* 确保故事内容可见 */
+.prose p {
+  color: var(--card-text);
+}
+
+/* 自定义按钮颜色 */
+.bg-blue-600 {
+  background-color: var(--primary-color);
+}
+
+.hover\:bg-blue-700:hover {
+  background-color: var(--primary-color);
+  opacity: 0.9;
+}
+
+.text-blue-600 {
+  color: var(--primary-color);
+}
+
+.border-blue-500, .border-blue-600 {
+  border-color: var(--primary-color);
+}
+
+/* 自定义高亮区域 */
+.bg-blue-50 {
+  background-color: var(--highlight-color);
+}
+
+.text-blue-800 {
+  color: var(--card-text);
+}
+
+.border-l-4.border-blue-500 {
+  border-left-color: var(--highlight-border);
+}
+
+/* 导出按钮 */
+.bg-green-600 {
+  background-color: var(--secondary-color);
+}
+
+.hover\:bg-green-700:hover {
+  background-color: var(--secondary-color);
+  opacity: 0.9;
+}
+
+/* 确保角色卡片内容可见 */
+.character-card {
+  background-color: var(--card-background);
+  color: var(--card-text);
+  border: 1px solid var(--border-color);
+}
+
+.character-card h4, 
+.character-card p {
+  color: var(--card-text);
+}
+
+/* 确保故事卡片内容可见 */
+.story-card {
+  background-color: var(--card-background);
+  color: var(--card-text);
+  border: 1px solid var(--border-color);
+}
+
+.story-card h4, 
+.story-card p {
+  color: var(--card-text);
+}
+
+/* 添加自定义CSS变量类 */
+.border-primary-color {
+  border-color: var(--primary-color);
+}
+
+.bg-highlight-color {
+  background-color: var(--highlight-color);
+}
+
+.border-highlight-border {
+  border-color: var(--highlight-border);
 }
