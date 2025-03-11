@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
+import { ApiProvider } from '@/types';
+import { setApiProvider } from '@/lib/ai';
 
 interface StoryCreatorProps {
   onStoryCreated?: () => void;
@@ -17,7 +19,8 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
     user,
     currentCharacter, 
     addStory, 
-    setCurrentStory 
+    setCurrentStory,
+    updateApiSettings
   } = useUserStore();
 
   const handleCreateStory = async (e: React.FormEvent) => {
@@ -80,9 +83,73 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
     }
   };
 
+  // 切换API提供商
+  const handleChangeApiProvider = async (provider: ApiProvider) => {
+    if (!user) return;
+    
+    try {
+      console.log('切换API提供商:', provider);
+      
+      // 更新用户的API设置
+      updateApiSettings({ provider });
+      
+      // 设置AI服务的当前提供商
+      setApiProvider(provider);
+      
+      // 向服务器发送更新请求
+      const response = await axios.post('/api/auth/updateSettings', {
+        email: user.email,
+        apiSettings: { provider }
+      });
+      
+      if (response.data.success) {
+        console.log('API提供商更新成功:', response.data.data.provider);
+      } else {
+        console.error('API提供商更新失败:', response.data.error);
+        setError('更新API提供商失败');
+      }
+    } catch (error) {
+      console.error('更新API提供商时出错:', error);
+      setError('更新API提供商失败，请稍后再试');
+    }
+  };
+
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">创建新故事</h2>
+      
+      {/* API提供商选择 */}
+      {user && (
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            选择AI提供商
+          </label>
+          <div className="flex space-x-2 mb-2">
+            <button
+              type="button"
+              onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
+              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                user.apiSettings?.provider === ApiProvider.DEEPSEEK 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Deepseek
+            </button>
+            <button
+              type="button"
+              onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
+              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                user.apiSettings?.provider === ApiProvider.GOOGLE 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+              }`}
+            >
+              Google
+            </button>
+          </div>
+        </div>
+      )}
       
       <form onSubmit={handleCreateStory} className="space-y-4">
         <div>

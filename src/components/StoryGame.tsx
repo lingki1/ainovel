@@ -17,6 +17,7 @@ export default function StoryGame() {
   const [showCustomOption, setShowCustomOption] = useState(false);
   const [lastContentId, setLastContentId] = useState<string | null>(null);
   const [currentApiProvider, setCurrentApiProvider] = useState<string>('');
+  const [showApiProviderInfo, setShowApiProviderInfo] = useState(false);
   
   // 故事内容滚动区域的引用
   const storyContentRef = useRef<HTMLDivElement>(null);
@@ -165,6 +166,8 @@ export default function StoryGame() {
       
       if (response.data.success) {
         console.log('API提供商更新成功:', response.data.data.provider);
+        // 隐藏API提供商选择区域
+        setShowApiProviderInfo(false);
       } else {
         console.error('API提供商更新失败:', response.data.error);
         setError('更新API提供商失败');
@@ -186,16 +189,35 @@ export default function StoryGame() {
 
   return (
     <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center mb-6">故事游戏</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">故事游戏</h2>
+        
+        {/* API提供商选择 - 移动端优化版本 */}
+        {user && (
+          <div className="flex items-center">
+            <span className="text-xs text-gray-600 mr-2">AI:</span>
+            <button
+              onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
+              className="text-sm px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none flex items-center"
+            >
+              <span className="font-medium">
+                {user.apiSettings?.provider === ApiProvider.DEEPSEEK ? 'Deepseek' : 'Google'}
+              </span>
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showApiProviderInfo ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
       
-      {/* API提供商选择 */}
-      {user && (
-        <div className="mb-6">
-          <h3 className="text-sm font-medium mb-2">选择AI提供商:</h3>
+      {/* API提供商选择下拉菜单 */}
+      {showApiProviderInfo && user && (
+        <div className="mb-4 p-2 bg-gray-50 rounded-md border border-gray-200">
           <div className="flex space-x-2">
             <button
               onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
-              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+              className={`flex-1 py-1 px-2 text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${
                 user.apiSettings?.provider === ApiProvider.DEEPSEEK 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -205,7 +227,7 @@ export default function StoryGame() {
             </button>
             <button
               onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
-              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+              className={`flex-1 py-1 px-2 text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${
                 user.apiSettings?.provider === ApiProvider.GOOGLE 
                   ? 'bg-blue-600 text-white' 
                   : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
@@ -214,18 +236,13 @@ export default function StoryGame() {
               Google
             </button>
           </div>
-          <div className="mt-1 text-xs text-gray-500">
-            当前API提供商: {user.apiSettings?.provider || '未设置'} | 
-            内存中的提供商: {currentApiProvider || '未设置'} | 
-            AI服务中的提供商: {getApiProvider()}
-          </div>
         </div>
       )}
       
       {/* 故事内容滚动区域 */}
       <div 
         ref={storyContentRef}
-        className="mb-6 prose max-w-none h-96 overflow-y-auto border border-gray-200 rounded-lg p-4"
+        className="mb-4 prose max-w-none h-96 overflow-y-auto border border-gray-200 rounded-lg p-4"
       >
         {currentStory.content.map((item) => (
           <div key={item.id} data-content-id={item.id} className="mb-4 story-item">
@@ -243,10 +260,13 @@ export default function StoryGame() {
       </div>
       
       {/* 字数控制 */}
-      <div className="mb-6">
-        <label htmlFor="wordCount" className="block text-sm font-medium mb-1">
-          续写字数 (500-1000)
-        </label>
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-1">
+          <label htmlFor="wordCount" className="block text-sm font-medium">
+            续写字数
+          </label>
+          <span className="text-sm font-medium">{wordCount}字</span>
+        </div>
         <input
           id="wordCount"
           type="range"
@@ -257,10 +277,9 @@ export default function StoryGame() {
           onChange={(e) => setWordCount(Number(e.target.value))}
           className="w-full"
         />
-        <div className="flex justify-between text-sm">
-          <span>500字</span>
-          <span>{wordCount}字</span>
-          <span>1000字</span>
+        <div className="flex justify-between text-xs text-gray-500">
+          <span>500</span>
+          <span>1000</span>
         </div>
       </div>
       
