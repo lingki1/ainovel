@@ -39,9 +39,37 @@ export default function Home() {
     } else if (!currentStory) {
       setCurrentStep('story');
     } else {
-      setCurrentStep('game');
+      // 只有在明确选择了故事后才跳转到游戏页面
+      // 这里不自动跳转，而是依赖handleStorySelected和handleStoryCreated函数
     }
   }, [user, currentCharacter, currentStory]);
+
+  // 添加处理角色选择的函数
+  const handleCharacterSelected = () => {
+    // 强制跳转到故事选择页面，无论是否有当前故事
+    setCurrentStep('story');
+  };
+
+  // 添加处理故事选择的函数
+  const handleStorySelected = () => {
+    setCurrentStep('game');
+  };
+
+  // 添加处理故事创建的函数
+  const handleStoryCreated = () => {
+    setCurrentStep('game');
+  };
+
+  // 添加自动滚动到新内容的功能
+  useEffect(() => {
+    // 当故事内容更新时，滚动到最新内容
+    if (currentStory && currentStep === 'game') {
+      const storyContentElement = document.getElementById('story-content');
+      if (storyContentElement) {
+        storyContentElement.scrollTop = storyContentElement.scrollHeight;
+      }
+    }
+  }, [currentStory, currentStep]);
 
   // 如果不是客户端渲染，显示加载中
   if (!isClient) {
@@ -110,15 +138,15 @@ export default function Home() {
         {/* 根据当前步骤显示不同内容 */}
         {currentStep === 'character' && (
           <div className="max-w-md mx-auto">
-            <CharacterManager onCharacterSelected={() => setCurrentStep('story')} />
+            <CharacterManager onCharacterSelected={handleCharacterSelected} />
           </div>
         )}
         
         {currentStep === 'story' && (
           <div className="max-w-md mx-auto">
-            <StoryList onStorySelected={() => setCurrentStep('game')} />
+            <StoryList onStorySelected={handleStorySelected} />
             <div className="mt-8">
-              <StoryCreator onStoryCreated={() => setCurrentStep('game')} />
+              <StoryCreator onStoryCreated={handleStoryCreated} />
             </div>
           </div>
         )}

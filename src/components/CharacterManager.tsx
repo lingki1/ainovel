@@ -37,8 +37,8 @@ export default function CharacterManager({ onCharacterSelected }: CharacterManag
     }
     
     // 检查角色数量限制
-    if (user.characters.length >= 2) {
-      setError('最多只能创建2个角色');
+    if (user.characters.length >= 1) {
+      setError('最多只能创建1个角色');
       return;
     }
     
@@ -53,9 +53,18 @@ export default function CharacterManager({ onCharacterSelected }: CharacterManag
       });
       
       if (response.data.success && response.data.data) {
-        addCharacter(response.data.data);
+        const newCharacter = response.data.data;
+        addCharacter(newCharacter);
         setNewCharacterName('');
         setNewCharacterAttributes('');
+        
+        // 自动选择新创建的角色
+        setCurrentCharacter(newCharacter);
+        
+        // 触发角色选择回调
+        if (onCharacterSelected) {
+          onCharacterSelected();
+        }
       } else {
         setError(response.data.error || '创建角色失败');
       }
@@ -68,7 +77,10 @@ export default function CharacterManager({ onCharacterSelected }: CharacterManag
   };
 
   const handleSelectCharacter = (character: Character) => {
+    // 设置当前角色
     setCurrentCharacter(character);
+    
+    // 始终触发回调，无论是否切换角色
     if (onCharacterSelected) {
       onCharacterSelected();
     }
@@ -80,23 +92,30 @@ export default function CharacterManager({ onCharacterSelected }: CharacterManag
       return;
     }
     
-    if (window.confirm('确定要删除这个角色吗？所有相关的故事都将被删除。')) {
-      setIsLoading(true);
+    // 添加删除确认
+    if (!window.confirm('确定要删除此角色吗？所有故事/小说数据会被永久清除，可以在 我的故事-导出故事 保存您已经创作的内容。')) {
+      return;
+    }
+    
+    setError('');
+    setIsLoading(true);
+    
+    try {
+      const response = await axios.post('/api/auth/character/delete/', {
+        characterId,
+        email: user.email
+      });
       
-      try {
-        const response = await axios.delete(`/api/auth/character?id=${characterId}&email=${user.email}`);
-        
-        if (response.data.success) {
-          deleteCharacter(characterId);
-        } else {
-          setError(response.data.error || '删除角色失败');
-        }
-      } catch (error) {
-        console.error('删除角色失败:', error);
-        setError('删除角色失败，请稍后再试');
-      } finally {
-        setIsLoading(false);
+      if (response.data.success) {
+        deleteCharacter(characterId);
+      } else {
+        setError(response.data.error || '删除角色失败');
       }
+    } catch (error) {
+      console.error('删除角色失败:', error);
+      setError('删除角色失败，请稍后再试');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -153,7 +172,7 @@ export default function CharacterManager({ onCharacterSelected }: CharacterManag
       </div>
       
       {/* 创建新角色表单 */}
-      {user && user.characters && user.characters.length < 2 && (
+      {user && user.characters && user.characters.length < 1 && (
         <form onSubmit={handleCreateCharacter} className="space-y-4">
           <div>
             <label htmlFor="characterName" className="block text-sm font-medium mb-1">

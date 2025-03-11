@@ -20,6 +20,8 @@ export default function StoryGame() {
   
   // 故事内容滚动区域的引用
   const storyContentRef = useRef<HTMLDivElement>(null);
+  const newContentRef = useRef<HTMLDivElement>(null);
+  const [shouldScrollToNewContent, setShouldScrollToNewContent] = useState(false);
   
   const { 
     user,
@@ -42,17 +44,31 @@ export default function StoryGame() {
     if (storyContentRef.current && currentStory?.content) {
       // 如果有新内容添加，滚动到新内容的开始位置
       if (lastContentId && currentStory.content.length > 0) {
-        const newContentIndex = currentStory.content.findIndex(item => item.id === lastContentId);
-        if (newContentIndex >= 0 && newContentIndex < currentStory.content.length - 1) {
+        const lastContentIndex = currentStory.content.findIndex(item => item.id === lastContentId);
+        if (lastContentIndex >= 0 && lastContentIndex < currentStory.content.length - 1) {
           // 找到新内容的DOM元素
-          const newContentElement = document.querySelector(`[data-content-id="${currentStory.content[newContentIndex + 1].id}"]`);
+          const newContentElement = document.getElementById(currentStory.content[lastContentIndex + 1].id);
           if (newContentElement) {
-            newContentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            setTimeout(() => {
+              newContentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
           }
         }
       }
     }
   }, [currentStory?.content, lastContentId]);
+
+  // 处理滚动到新内容
+  useEffect(() => {
+    if (shouldScrollToNewContent && newContentRef.current) {
+      setTimeout(() => {
+        if (newContentRef.current) {
+          newContentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+      setShouldScrollToNewContent(false);
+    }
+  }, [shouldScrollToNewContent]);
 
   const handleGenerateOptions = async () => {
     if (!currentStory || !currentCharacter || !user) return;
@@ -124,6 +140,14 @@ export default function StoryGame() {
         setOptions([]);
         setCustomOption('');
         setShowCustomOption(false);
+        
+        // 设置标志，指示需要滚动到新内容
+        setShouldScrollToNewContent(true);
+        
+        // 记录新添加的玩家选择内容ID，用于滚动定位
+        if (response.data.data.length > 0) {
+          setLastContentId(response.data.data[0].id);
+        }
       } else {
         setError(response.data.error || '继续故事失败');
       }
@@ -185,75 +209,95 @@ export default function StoryGame() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-bold">故事游戏</h2>
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md">
+      {/* 标题栏 */}
+      <div className="p-4 border-b flex justify-between items-center">
+        <h2 className="text-xl font-bold">{currentStory.title || '无标题故事'}</h2>
         
-        {/* API提供商选择 - 移动端优化版本 */}
-        {user && (
-          <div className="flex items-center">
-            <span className="text-xs text-gray-600 mr-2">AI:</span>
-            <button
-              onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
-              className="text-sm px-2 py-1 rounded-md bg-gray-100 hover:bg-gray-200 focus:outline-none flex items-center"
-            >
-              <span className="font-medium">
-                {user.apiSettings?.provider === ApiProvider.DEEPSEEK ? 'Deepseek' : 'Google'}
-              </span>
-              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={showApiProviderInfo ? "M5 15l7-7 7 7" : "M19 9l-7 7-7-7"} />
-              </svg>
-            </button>
-          </div>
-        )}
+        {/* API提供商选择 - 移到右侧并使用下拉菜单样式 */}
+        <div className="relative">
+          <button
+            onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
+            className="flex items-center text-sm px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-100"
+          >
+            <span>API: {user?.apiSettings?.provider || 'deepseek'}</span>
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {showApiProviderInfo && (
+            <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+              <div className="p-3">
+                <p className="text-sm mb-2">选择AI提供商:</p>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-md ${
+                      user?.apiSettings?.provider === ApiProvider.DEEPSEEK 
+                        ? 'bg-primary-color text-white' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Deepseek
+                  </button>
+                  <button
+                    onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
+                    className={`w-full text-left px-3 py-2 text-sm rounded-md ${
+                      user?.apiSettings?.provider === ApiProvider.GOOGLE 
+                        ? 'bg-primary-color text-white' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    Google
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       
-      {/* API提供商选择下拉菜单 */}
-      {showApiProviderInfo && user && (
-        <div className="mb-4 p-2 bg-gray-50 rounded-md border border-gray-200">
-          <div className="flex space-x-2">
-            <button
-              onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
-              className={`flex-1 py-1 px-2 text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${
-                user.apiSettings?.provider === ApiProvider.DEEPSEEK 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-            >
-              Deepseek
-            </button>
-            <button
-              onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
-              className={`flex-1 py-1 px-2 text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors ${
-                user.apiSettings?.provider === ApiProvider.GOOGLE 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-            >
-              Google
-            </button>
-          </div>
-        </div>
-      )}
-      
-      {/* 故事内容滚动区域 */}
+      {/* 故事内容 */}
       <div 
+        id="story-content"
         ref={storyContentRef}
-        className="mb-4 prose max-w-none h-96 overflow-y-auto border border-gray-200 rounded-lg p-4"
+        className="p-4 max-h-[60vh] overflow-y-auto story-content"
       >
-        {currentStory.content.map((item) => (
-          <div key={item.id} data-content-id={item.id} className="mb-4 story-item">
-            {item.type === 'ai' ? (
-              <div className="bg-white p-4 rounded-lg border border-gray-200">
-                <p className="whitespace-pre-line">{item.text}</p>
-              </div>
-            ) : (
-              <div className="bg-highlight-color p-3 rounded-lg border border-highlight-border">
-                <p className="font-medium">选择: {item.selectedChoice}</p>
-              </div>
-            )}
+        {currentStory.content.map((content, index) => {
+          // 检查是否是最后一个玩家选择后的AI内容
+          const isNewContent = lastContentId && 
+            index > 0 && 
+            currentStory.content[index-1].id === lastContentId;
+          
+          return (
+            <div 
+              key={content.id} 
+              id={content.id}
+              ref={isNewContent ? newContentRef : null}
+              className={`mb-4 ${
+                content.type === 'player-choice' 
+                  ? 'pl-4 border-l-4 border-primary-color italic' 
+                  : ''
+              } ${isNewContent ? 'new-content' : ''}`}
+            >
+              {content.type === 'player-choice' ? (
+                <div className="text-gray-600">
+                  <span className="font-medium">你的选择: </span>
+                  {content.text}
+                </div>
+              ) : (
+                <div className="whitespace-pre-wrap">{content.text}</div>
+              )}
+            </div>
+          );
+        })}
+        
+        {isLoadingContinue && (
+          <div className="flex justify-center my-4">
+            <div className="animate-pulse text-gray-500">生成内容中...</div>
           </div>
-        ))}
+        )}
       </div>
       
       {/* 字数控制 */}
@@ -351,12 +395,6 @@ export default function StoryGame() {
         >
           {isLoadingOptions ? '生成选项中...' : '生成故事选项'}
         </button>
-      )}
-      
-      {isLoadingContinue && (
-        <div className="text-center">
-          正在继续故事...
-        </div>
       )}
     </div>
   );

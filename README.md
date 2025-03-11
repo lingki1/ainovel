@@ -42,10 +42,10 @@ cd ainovel
 npm install
 ```
 
-3. 创建环境变量文件 (.env.local)
-```
-DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f
-GOOGLE_API_KEY=AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0
+3. 创建环境变量文件
+```bash
+echo "NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key" > .env.local
+echo "NEXT_PUBLIC_GOOGLE_API_KEY=your_google_api_key" >> .env.local
 ```
 
 4. 启动开发服务器
@@ -85,8 +85,8 @@ pm2 restart ainovel
 
 2. 创建环境变量文件
 ```bash
-echo "DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f" > .env.local
-echo "GOOGLE_API_KEY=AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0" >> .env.local
+echo "NEXT_PUBLIC_DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f" > .env.local
+echo "NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0" >> .env.local
 ```
 
 3. 构建应用

@@ -168,3 +168,38 @@ button {
 .border-highlight-border {
   border-color: var(--highlight-border);
 }
+
+/* 新内容样式 */
+.new-content {
+  animation: highlight 2s ease-in-out;
+  scroll-margin-top: 20px;
+}
+
+@keyframes highlight {
+  0% {
+    background-color: rgba(255, 255, 0, 0.2);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* 故事内容区域样式 */
+.story-content {
+  scroll-behavior: smooth;
+}
+
+/* 流式生成内容的动画效果 */
+.typing-animation::after {
+  content: '|';
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

@@ -41,6 +41,12 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
       return;
     }
     
+    // 检查故事数量限制
+    if (currentCharacter.stories.length >= 4) {
+      setError('每个角色最多只能创建4个故事');
+      return;
+    }
+    
     // 将关键词拆分为数组
     const keywordArray = keywords
       .split(/[,，、\s]+/)
