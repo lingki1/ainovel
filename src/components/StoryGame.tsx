@@ -16,7 +16,6 @@ export default function StoryGame() {
   const [customOption, setCustomOption] = useState('');
   const [showCustomOption, setShowCustomOption] = useState(false);
   const [lastContentId, setLastContentId] = useState<string | null>(null);
-  const [currentApiProvider, setCurrentApiProvider] = useState<string>('');
   const [showApiProviderInfo, setShowApiProviderInfo] = useState(false);
   
   // 故事内容滚动区域的引用
@@ -35,7 +34,6 @@ export default function StoryGame() {
     if (user?.apiSettings?.provider) {
       console.log('组件加载时设置API提供商:', user.apiSettings.provider);
       setApiProvider(user.apiSettings.provider);
-      setCurrentApiProvider(user.apiSettings.provider);
     }
   }, [user]);
 
@@ -156,7 +154,6 @@ export default function StoryGame() {
       
       // 设置AI服务的当前提供商
       setApiProvider(provider);
-      setCurrentApiProvider(provider);
       
       // 向服务器发送更新请求
       const response = await axios.post('/api/auth/updateSettings', {
