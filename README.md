@@ -128,6 +128,21 @@ server {
     }
 }
 ```
+6. 服务器更新
+#本地
+cd 文件夹
+git add .
+git commit -m ""
+git push origin maian
+
+#服务器
+备份 users.json
+cp /var/www/ainovel/public/data/users.json /var/www/ainovel/public/data/users.json.backup
+丢弃本地修改：
+git reset --hard HEAD  # 重置所有未提交的更改
+git pull origin main   # 拉取更新
+恢复 users.json
+mv /var/www/ainovel/public/data/users.json.backup /var/www/ainovel/public/data/users.json
 
 ## 使用指南
 

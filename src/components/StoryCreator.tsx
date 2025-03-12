@@ -5,6 +5,7 @@ import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
 import { ApiProvider } from '@/types';
 import { setApiProvider } from '@/lib/ai';
+import LoadingIndicator from './LoadingIndicator';
 
 interface StoryCreatorProps {
   onStoryCreated?: () => void;
@@ -123,6 +124,12 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">创建新故事</h2>
+      
+      {/* 加载提示 */}
+      <LoadingIndicator 
+        isLoading={isLoading} 
+        message="创建故事中"
+      />
       
       {/* API提供商选择 */}
       {user && (

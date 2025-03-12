@@ -6,6 +6,7 @@ import axios from 'axios';
 import { formatDate } from '@/utils';
 import { ApiProvider } from '@/types';
 import { setApiProvider, getApiProvider } from '@/lib/ai';
+import LoadingIndicator from './LoadingIndicator';
 
 export default function StoryGame() {
   const [options, setOptions] = useState<string[]>([]);
@@ -209,7 +210,13 @@ export default function StoryGame() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md">
+    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+      {/* 加载提示 */}
+      <LoadingIndicator 
+        isLoading={isLoadingOptions || isLoadingContinue} 
+        message={isLoadingOptions ? "生成故事选项中" : "续写故事中"}
+      />
+      
       {/* 标题栏 */}
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-xl font-bold">{currentStory.title || '无标题故事'}</h2>
@@ -262,140 +269,159 @@ export default function StoryGame() {
       <div 
         id="story-content"
         ref={storyContentRef}
-        className="p-4 max-h-[60vh] overflow-y-auto story-content"
+        className="p-4 h-[400px] sm:h-[500px] overflow-y-auto"
       >
-        {currentStory.content.map((content, index) => {
-          // 检查是否是最后一个玩家选择后的AI内容
-          const isNewContent = lastContentId && 
-            index > 0 && 
-            currentStory.content[index-1].id === lastContentId;
-          
-          return (
-            <div 
-              key={content.id} 
-              id={content.id}
-              ref={isNewContent ? newContentRef : null}
-              className={`mb-4 ${
-                content.type === 'player-choice' 
-                  ? 'pl-4 border-l-4 border-primary-color italic' 
-                  : ''
-              } ${isNewContent ? 'new-content' : ''}`}
-            >
-              {content.type === 'player-choice' ? (
-                <div className="text-gray-600">
-                  <span className="font-medium">你的选择: </span>
-                  {content.text}
-                </div>
+        {currentStory?.content.map((segment, index) => (
+          <div 
+            key={segment.id} 
+            id={segment.id}
+            className={`mb-6 ${
+              index === currentStory.content.length - 1 && shouldScrollToNewContent
+                ? 'animate-highlight'
+                : ''
+            }`}
+            ref={index === currentStory.content.length - 1 ? newContentRef : null}
+          >
+            {segment.text.split('\n').map((paragraph, i) => (
+              paragraph ? <p key={i} className="mb-4">{paragraph}</p> : <br key={i} />
+            ))}
+            
+            {segment.selectedChoice && (
+              <div className="my-4 p-3 bg-gray-100 border-l-4 border-gray-500">
+                选择: {segment.selectedChoice}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+      
+      {/* 故事选项 */}
+      <div className="p-4 border-t bg-gray-50">
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+            {error}
+          </div>
+        )}
+        
+        {isLoadingOptions || isLoadingContinue ? (
+          <div className="text-center py-4">
+            <p className="text-gray-600">
+              {isLoadingOptions ? '正在生成故事选项...' : '正在继续故事...'}
+            </p>
+          </div>
+        ) : options.length > 0 ? (
+          <div>
+            <h3 className="text-lg font-medium mb-3">选择故事发展方向:</h3>
+            <div className="space-y-2">
+              {options.map((option, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleChooseOption(option)}
+                  className="w-full text-left p-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                >
+                  {option}
+                </button>
+              ))}
+              
+              {!showCustomOption ? (
+                <button
+                  onClick={() => setShowCustomOption(true)}
+                  className="w-full text-left p-3 bg-indigo-50 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors"
+                >
+                  自定义选项...
+                </button>
               ) : (
-                <div className="whitespace-pre-wrap">{content.text}</div>
+                <form onSubmit={handleSubmitCustomOption} className="space-y-2 mt-2">
+                  <textarea
+                    value={customOption}
+                    onChange={(e) => setCustomOption(e.target.value)}
+                    placeholder="请输入您想要的故事发展方向..."
+                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    rows={3}
+                  />
+                  <div className="flex space-x-2">
+                    <button
+                      type="submit"
+                      disabled={!customOption.trim()}
+                      className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                    >
+                      确认
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomOption(false);
+                        setCustomOption('');
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                    >
+                      取消
+                    </button>
+                  </div>
+                </form>
               )}
             </div>
-          );
-        })}
-        
-        {isLoadingContinue && (
-          <div className="flex justify-center my-4">
-            <div className="animate-pulse text-gray-500">生成内容中...</div>
+          </div>
+        ) : (
+          <div>
+            <button
+              onClick={handleGenerateOptions}
+              disabled={isLoadingOptions || !currentStory || currentStory.content.length === 0}
+              className="w-full py-3 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              生成故事选项
+            </button>
+            
+            <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  字数设置
+                </label>
+                <select
+                  value={wordCount}
+                  onChange={(e) => setWordCount(Number(e.target.value))}
+                  className="w-full p-2 border border-gray-300 rounded-md"
+                >
+                  <option value={250}>短 (约250字)</option>
+                  <option value={500}>中 (约500字)</option>
+                  <option value={750}>长 (约750字)</option>
+                  <option value={1000}>超长 (约1000字)</option>
+                </select>
+              </div>
+              
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  AI提供商
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
+                    className={`flex-1 py-2 px-2 sm:px-4 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      getApiProvider() === ApiProvider.DEEPSEEK 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    }`}
+                  >
+                    Deepseek
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
+                    className={`flex-1 py-2 px-2 sm:px-4 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                      getApiProvider() === ApiProvider.GOOGLE 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                    }`}
+                  >
+                    Google
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
-      
-      {/* 字数控制 */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-1">
-          <label htmlFor="wordCount" className="block text-sm font-medium">
-            续写字数
-          </label>
-          <span className="text-sm font-medium">{wordCount}字</span>
-        </div>
-        <input
-          id="wordCount"
-          type="range"
-          min="500"
-          max="1000"
-          step="50"
-          value={wordCount}
-          onChange={(e) => setWordCount(Number(e.target.value))}
-          className="w-full"
-        />
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>500</span>
-          <span>1000</span>
-        </div>
-      </div>
-      
-      {/* 错误信息 */}
-      {error && (
-        <div className="mb-4 text-red-500 text-sm">{error}</div>
-      )}
-      
-      {/* 选项列表 */}
-      {options.length > 0 ? (
-        <div className="space-y-3 mb-6">
-          <h3 className="text-lg font-medium">选择故事发展方向:</h3>
-          
-          {options.map((option, i) => (
-            <button
-              key={i}
-              onClick={() => handleChooseOption(option)}
-              disabled={isLoadingContinue}
-              className="w-full text-left p-3 border border-gray-300 rounded-md hover:bg-highlight-color focus:outline-none focus:ring-2 focus:ring-primary-color disabled:opacity-50 transition-colors story-option"
-            >
-              {option}
-            </button>
-          ))}
-          
-          {/* 自定义选项按钮 */}
-          {!showCustomOption ? (
-            <button
-              onClick={() => setShowCustomOption(true)}
-              disabled={isLoadingContinue}
-              className="w-full text-center p-3 border border-dashed border-gray-300 rounded-md hover:bg-highlight-color focus:outline-none focus:ring-2 focus:ring-primary-color disabled:opacity-50 transition-colors"
-            >
-              + 自定义发展方向
-            </button>
-          ) : (
-            <form onSubmit={handleSubmitCustomOption} className="space-y-2">
-              <textarea
-                value={customOption}
-                onChange={(e) => setCustomOption(e.target.value)}
-                placeholder="请输入您想要的故事发展方向..."
-                className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-color"
-                rows={3}
-                disabled={isLoadingContinue}
-              />
-              <div className="flex space-x-2">
-                <button
-                  type="submit"
-                  disabled={isLoadingContinue || !customOption.trim()}
-                  className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors"
-                >
-                  确认
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCustomOption(false);
-                    setCustomOption('');
-                  }}
-                  disabled={isLoadingContinue}
-                  className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:opacity-50 transition-colors"
-                >
-                  取消
-                </button>
-              </div>
-            </form>
-          )}
-        </div>
-      ) : (
-        <button
-          onClick={handleGenerateOptions}
-          disabled={isLoadingOptions}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 transition-colors mb-4"
-        >
-          {isLoadingOptions ? '生成选项中...' : '生成故事选项'}
-        </button>
-      )}
     </div>
   );
 } 

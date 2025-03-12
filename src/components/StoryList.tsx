@@ -13,10 +13,10 @@ interface StoryListProps {
 export default function StoryList({ onStorySelected }: StoryListProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   
   const { 
     currentCharacter, 
-    currentStory,
     setCurrentStory,
     user,
     setCurrentCharacter,
@@ -25,6 +25,10 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
   } = useUserStore();
 
   const handleSelectStory = (story: Story, characterId?: string) => {
+    // 清除任何消息
+    setError('');
+    setSuccessMessage('');
+    
     // 如果提供了角色ID且与当前角色不同，先切换角色
     if (characterId && (!currentCharacter || currentCharacter.id !== characterId)) {
       const character = user?.characters.find(c => c.id === characterId);
@@ -33,21 +37,25 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
       }
     }
     
-    // 如果选择的是当前故事，也要触发回调
-    const isChangingStory = !currentStory || currentStory.id !== story.id;
-    
     // 设置当前故事
     setCurrentStory(story);
     
-    // 如果是切换故事或者强制触发，则触发回调
-    if ((isChangingStory || !currentCharacter) && onStorySelected) {
+    // 始终触发回调，无论是否是相同的故事
+    if (onStorySelected) {
       onStorySelected();
     }
   };
 
   // 切换API提供商
   const handleChangeApiProvider = async (provider: ApiProvider) => {
-    if (!user || !currentCharacter || currentCharacter.stories.length === 0) return;
+    if (!user || !currentCharacter || currentCharacter.stories.length === 0) {
+      console.log('无法切换API提供商：用户、角色或故事不存在');
+      return;
+    }
+    
+    setIsLoading(true);
+    setError('');
+    setSuccessMessage('');
     
     try {
       console.log('切换API提供商:', provider);
@@ -65,17 +73,19 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
       });
       
       if (response.data.success) {
-        console.log('API提供商更新成功:', response.data.data.provider);
-        
-        // 如果有故事，选择第一个故事并跳转到游戏页面
-        if (currentCharacter.stories.length > 0) {
-          handleSelectStory(currentCharacter.stories[0]);
-        }
+        console.log('API提供商更新成功:', response.data.data?.provider || provider);
+        // 显示成功消息，提示用户选择故事
+        setSuccessMessage(`AI提供商已更新为 ${provider}，请选择一个故事进入`);
+        setError(''); // 清除任何错误
       } else {
         console.error('API提供商更新失败:', response.data.error);
+        setError(response.data.error || 'API提供商更新失败');
       }
     } catch (error) {
       console.error('更新API提供商时出错:', error);
+      setError('更新API提供商失败，请稍后再试');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -150,6 +160,19 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
                           更新于: {new Date(story.updatedAt).toLocaleString()}
                         </p>
                         
+                        {/* 进入故事按钮 */}
+                        <div className="mt-3 flex justify-end">
+                          <button
+                            className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
+                            onClick={(e) => {
+                              e.stopPropagation(); // 防止触发父元素的点击事件
+                              handleSelectStory(story, character.id);
+                            }}
+                          >
+                            进入故事
+                          </button>
+                        </div>
+                        
                         {/* 删除按钮 */}
                         <button
                           className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1"
@@ -218,6 +241,13 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
         </div>
       )}
       
+      {/* 成功消息 */}
+      {successMessage && (
+        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+          {successMessage}
+        </div>
+      )}
+      
       {currentCharacter.stories.length === 0 ? (
         <p className="text-gray-500 text-center py-4">您还没有创建任何故事</p>
       ) : (
@@ -235,6 +265,19 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
               <p className="text-xs text-gray-400 mt-1">
                 更新于: {new Date(story.updatedAt).toLocaleString()}
               </p>
+              
+              {/* 进入故事按钮 */}
+              <div className="mt-3 flex justify-end">
+                <button
+                  className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
+                  onClick={(e) => {
+                    e.stopPropagation(); // 防止触发父元素的点击事件
+                    handleSelectStory(story);
+                  }}
+                >
+                  进入故事
+                </button>
+              </div>
               
               {/* 删除按钮 */}
               <button

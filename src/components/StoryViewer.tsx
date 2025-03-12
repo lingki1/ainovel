@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import { formatStoryToText } from '@/utils';
+import LoadingIndicator from './LoadingIndicator';
 
 export default function StoryViewer() {
   const { currentStory } = useUserStore();
@@ -91,10 +92,10 @@ export default function StoryViewer() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">{currentStory.title || '无标题故事'}</h2>
-        <div className="flex space-x-2">
+    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 bg-white rounded-lg shadow-md">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6">
+        <h2 className="text-2xl font-bold mb-3 sm:mb-0">{currentStory.title || '无标题故事'}</h2>
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={handleExportStory}
             disabled={isExporting}
@@ -111,6 +112,12 @@ export default function StoryViewer() {
           </button>
         </div>
       </div>
+      
+      {/* 加载提示 */}
+      <LoadingIndicator 
+        isLoading={isExporting || isSharing} 
+        message={isExporting ? "导出故事中" : "生成分享链接中"}
+      />
       
       {/* 分享链接 */}
       {showAuthorInput && !shareSuccess && (
@@ -130,7 +137,7 @@ export default function StoryViewer() {
               className="w-full p-2 border border-blue-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
-          <div className="flex justify-between">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowAuthorInput(false)}
               className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
@@ -152,12 +159,12 @@ export default function StoryViewer() {
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
           <h3 className="text-lg font-medium text-green-800 mb-2">分享链接已生成！</h3>
           <p className="text-green-700 mb-3">链接已复制到剪贴板，您可以直接粘贴分享给朋友</p>
-          <div className="flex items-center mb-3">
+          <div className="flex flex-col sm:flex-row items-center mb-3 gap-2">
             <input
               type="text"
               value={shareUrl}
               readOnly
-              className="flex-1 p-2 border border-gray-300 rounded-md mr-2"
+              className="flex-1 p-2 border border-gray-300 rounded-md w-full sm:w-auto"
               onClick={(e) => (e.target as HTMLInputElement).select()}
             />
             <button
@@ -165,13 +172,13 @@ export default function StoryViewer() {
                 navigator.clipboard.writeText(shareUrl);
                 alert('链接已复制到剪贴板！');
               }}
-              className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
+              className="px-3 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors w-full sm:w-auto"
             >
               复制
             </button>
           </div>
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-green-600">
+          <div className="flex flex-col sm:flex-row justify-between items-center">
+            <p className="text-sm text-green-600 mb-2 sm:mb-0">
               {authorName ? `读者将看到您的名字: ${authorName}` : '您没有添加创作者名字'}
             </p>
             <button
@@ -184,11 +191,11 @@ export default function StoryViewer() {
         </div>
       )}
       
-      <div className="prose max-w-none">
+      <div className="prose max-w-none overflow-auto">
         {currentStory.content.map((segment, index) => (
           <div key={index} className="mb-6">
             {segment.text.split('\n').map((paragraph, i) => (
-              paragraph ? <p key={i}>{paragraph}</p> : <br key={i} />
+              paragraph ? <p key={i} className="mb-2">{paragraph}</p> : <br key={i} />
             ))}
             
             {segment.selectedChoice && (

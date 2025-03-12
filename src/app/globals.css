@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* 亮色主题（默认） */
 :root {
   --background: #f3f3f3;
   --foreground: #333333;
@@ -8,10 +9,46 @@
   --card-background: #ffffff;
   --card-text: #333333;
   --border-color: #d1d1d1;
-  --primary-color: #43853d;
-  --secondary-color: #026e00;
-  --highlight-color: #f1f8e9;
-  --highlight-border: #43853d;
+  --primary-color: #3b82f6;  /* 蓝色 */
+  --secondary-color: #2563eb;
+  --highlight-color: #eff6ff;
+  --highlight-border: #3b82f6;
+}
+
+/* 明确的亮色主题类 */
+.light {
+  --background: #f3f3f3;
+  --foreground: #333333;
+  --input-background: #ffffff;
+  --input-text: #333333;
+  --card-background: #ffffff;
+  --card-text: #333333;
+  --border-color: #d1d1d1;
+  --primary-color: #3b82f6;  /* 蓝色 */
+  --secondary-color: #2563eb;
+  --highlight-color: #eff6ff;
+  --highlight-border: #3b82f6;
+}
+
+/* Node.js 主题 */
+.node-theme {
+  --background: #333333;
+  --foreground: #ffffff;
+  --input-background: #444444;
+  --input-text: #ffffff;
+  --card-background: #444444;
+  --card-text: #ffffff;
+  --border-color: #555555;
+  --primary-color: #6cc24a;  /* Node.js 绿色 */
+  --secondary-color: #43853d;
+  --highlight-color: #2c3c22;
+  --highlight-border: #6cc24a;
+  
+  /* Node.js 特有样式 */
+  --node-accent: #6cc24a;
+  --node-secondary: #43853d;
+  --node-dark: #333333;
+  --node-light: #ffffff;
 }
 
 @theme inline {
@@ -21,6 +58,7 @@
   --font-mono: var(--font-geist-mono);
 }
 
+/* 暗色主题 */
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1e1e1e;
@@ -30,11 +68,26 @@
     --card-background: #252526;
     --card-text: #cccccc;
     --border-color: #3e3e3e;
-    --primary-color: #6cc24a;
-    --secondary-color: #43853d;
-    --highlight-color: #2c3c22;
-    --highlight-border: #6cc24a;
+    --primary-color: #818cf8;  /* 紫色 */
+    --secondary-color: #6366f1;
+    --highlight-color: #312e81;
+    --highlight-border: #818cf8;
   }
+}
+
+/* 明确的暗色主题类 */
+.dark {
+  --background: #1e1e1e;
+  --foreground: #cccccc;
+  --input-background: #2d2d2d;
+  --input-text: #cccccc;
+  --card-background: #252526;
+  --card-text: #cccccc;
+  --border-color: #3e3e3e;
+  --primary-color: #818cf8;  /* 紫色 */
+  --secondary-color: #6366f1;
+  --highlight-color: #312e81;
+  --highlight-border: #818cf8;
 }
 
 body {
@@ -169,6 +222,27 @@ button {
   border-color: var(--highlight-border);
 }
 
+/* Node.js 主题特有样式 */
+.node-theme .bg-blue-600,
+.node-theme .bg-indigo-600 {
+  background-color: var(--node-accent);
+}
+
+.node-theme .hover\:bg-blue-700:hover,
+.node-theme .hover\:bg-indigo-700:hover {
+  background-color: var(--node-secondary);
+}
+
+.node-theme .text-blue-600,
+.node-theme .text-indigo-600 {
+  color: var(--node-accent);
+}
+
+.node-theme .border-blue-500,
+.node-theme .border-indigo-500 {
+  border-color: var(--node-accent);
+}
+
 /* 新内容样式 */
 .new-content {
   animation: highlight 2s ease-in-out;
@@ -201,5 +275,38 @@ button {
   }
   50% {
     opacity: 0;
+  }
+}
+
+/* 移动端响应式布局优化 */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .container, .max-w-md, .max-w-lg, .max-w-xl, .max-w-2xl, .max-w-3xl, .max-w-4xl, .max-w-5xl, .max-w-6xl, .max-w-7xl {
+    width: 100% !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .py-12 {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+  
+  .px-6 {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  
+  .p-6 {
+    padding: 1rem !important;
+  }
+  
+  .space-y-6 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(1rem * calc(1 - var(--tw-space-y-reverse))) !important;
+    margin-bottom: calc(1rem * var(--tw-space-y-reverse)) !important;
   }
 }

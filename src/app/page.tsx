@@ -160,7 +160,7 @@ export default function Home() {
             <div className="bg-white shadow-sm rounded-lg mb-6">
               <div className="flex border-b">
                 <button
-                  className={`flex-1 py-3 px-4 text-center font-medium ${
+                  className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium ${
                     activeTab === 'game'
                       ? 'text-primary-color border-b-2 border-primary-color'
                       : 'hover:text-primary-color'
@@ -170,7 +170,7 @@ export default function Home() {
                   故事游戏
                 </button>
                 <button
-                  className={`flex-1 py-3 px-4 text-center font-medium ${
+                  className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium ${
                     activeTab === 'viewer'
                       ? 'text-primary-color border-b-2 border-primary-color'
                       : 'hover:text-primary-color'
