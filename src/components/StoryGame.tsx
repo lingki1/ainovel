@@ -202,15 +202,15 @@ export default function StoryGame() {
 
   if (!currentStory || !currentCharacter) {
     return (
-      <div className="w-full max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6">故事游戏</h2>
-        <p className="text-center py-4">请先选择一个故事</p>
+      <div className="w-full max-w-2xl mx-auto p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md">
+        <h2 className="text-2xl font-bold text-center mb-6 text-white">故事游戏</h2>
+        <p className="text-center py-4 text-gray-300">请先选择一个故事</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md overflow-hidden border border-gray-700">
       {/* 加载提示 */}
       <LoadingIndicator 
         isLoading={isLoadingOptions || isLoadingContinue} 
@@ -218,14 +218,14 @@ export default function StoryGame() {
       />
       
       {/* 标题栏 */}
-      <div className="p-4 border-b flex justify-between items-center">
-        <h2 className="text-xl font-bold">{currentStory.title || '无标题故事'}</h2>
+      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h2 className="text-xl font-bold text-white">{currentStory.title || '无标题故事'}</h2>
         
         {/* API提供商选择 - 移到右侧并使用下拉菜单样式 */}
         <div className="relative">
           <button
             onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
-            className="flex items-center text-sm px-3 py-1 rounded-md border border-gray-300 hover:bg-gray-100"
+            className="flex items-center text-sm px-3 py-1 rounded-md border border-gray-600 hover:bg-gray-700 text-white"
           >
             <span>API: {user?.apiSettings?.provider || 'deepseek'}</span>
             <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -234,16 +234,16 @@ export default function StoryGame() {
           </button>
           
           {showApiProviderInfo && (
-            <div className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+            <div className="absolute right-0 mt-1 w-48 bg-gray-700 rounded-md shadow-lg z-10 border border-gray-600">
               <div className="p-3">
-                <p className="text-sm mb-2">选择AI提供商:</p>
+                <p className="text-sm mb-2 text-gray-300">选择AI提供商:</p>
                 <div className="space-y-2">
                   <button
                     onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
                     className={`w-full text-left px-3 py-2 text-sm rounded-md ${
                       user?.apiSettings?.provider === ApiProvider.DEEPSEEK 
-                        ? 'bg-primary-color text-white' 
-                        : 'hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white' 
+                        : 'hover:bg-gray-600 text-gray-200'
                     }`}
                   >
                     Deepseek
@@ -252,8 +252,8 @@ export default function StoryGame() {
                     onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
                     className={`w-full text-left px-3 py-2 text-sm rounded-md ${
                       user?.apiSettings?.provider === ApiProvider.GOOGLE 
-                        ? 'bg-primary-color text-white' 
-                        : 'hover:bg-gray-100'
+                        ? 'bg-blue-600 text-white' 
+                        : 'hover:bg-gray-600 text-gray-200'
                     }`}
                   >
                     Google
@@ -269,7 +269,7 @@ export default function StoryGame() {
       <div 
         id="story-content"
         ref={storyContentRef}
-        className="p-4 h-[400px] sm:h-[500px] overflow-y-auto"
+        className="p-4 h-[400px] sm:h-[500px] overflow-y-auto bg-gray-800 text-white"
       >
         {currentStory?.content.map((segment, index) => (
           <div 
@@ -283,11 +283,11 @@ export default function StoryGame() {
             ref={index === currentStory.content.length - 1 ? newContentRef : null}
           >
             {segment.text.split('\n').map((paragraph, i) => (
-              paragraph ? <p key={i} className="mb-4">{paragraph}</p> : <br key={i} />
+              paragraph ? <p key={i} className="mb-4 text-gray-200">{paragraph}</p> : <br key={i} />
             ))}
             
             {segment.selectedChoice && (
-              <div className="my-4 p-3 bg-gray-100 border-l-4 border-gray-500">
+              <div className="my-4 p-3 bg-gray-700 border-l-4 border-indigo-500 text-gray-200">
                 选择: {segment.selectedChoice}
               </div>
             )}
@@ -296,28 +296,28 @@ export default function StoryGame() {
       </div>
       
       {/* 故事选项 */}
-      <div className="p-4 border-t bg-gray-50">
+      <div className="p-4 border-t border-gray-700 bg-gray-700">
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
+          <div className="mb-4 p-3 bg-red-800 text-red-200 rounded-md">
             {error}
           </div>
         )}
         
         {isLoadingOptions || isLoadingContinue ? (
           <div className="text-center py-4">
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               {isLoadingOptions ? '正在生成故事选项...' : '正在继续故事...'}
             </p>
           </div>
         ) : options.length > 0 ? (
           <div>
-            <h3 className="text-lg font-medium mb-3">选择故事发展方向:</h3>
+            <h3 className="text-lg font-medium mb-3 text-white">选择故事发展方向:</h3>
             <div className="space-y-2">
               {options.map((option, index) => (
                 <button
                   key={index}
                   onClick={() => handleChooseOption(option)}
-                  className="w-full text-left p-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                  className="w-full text-left p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition-colors text-gray-200"
                 >
                   {option}
                 </button>
@@ -326,7 +326,7 @@ export default function StoryGame() {
               {!showCustomOption ? (
                 <button
                   onClick={() => setShowCustomOption(true)}
-                  className="w-full text-left p-3 bg-indigo-50 border border-indigo-300 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors"
+                  className="w-full text-left p-3 bg-indigo-900 border border-indigo-700 text-indigo-200 rounded-md hover:bg-indigo-800 transition-colors"
                 >
                   自定义选项...
                 </button>
@@ -336,14 +336,14 @@ export default function StoryGame() {
                     value={customOption}
                     onChange={(e) => setCustomOption(e.target.value)}
                     placeholder="请输入您想要的故事发展方向..."
-                    className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full p-3 border border-gray-600 bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-gray-400"
                     rows={3}
                   />
                   <div className="flex space-x-2">
                     <button
                       type="submit"
                       disabled={!customOption.trim()}
-                      className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 transition-colors"
+                      className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 transition-colors"
                     >
                       确认
                     </button>
@@ -353,7 +353,7 @@ export default function StoryGame() {
                         setShowCustomOption(false);
                         setCustomOption('');
                       }}
-                      className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors"
+                      className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors"
                     >
                       取消
                     </button>
@@ -367,57 +367,25 @@ export default function StoryGame() {
             <button
               onClick={handleGenerateOptions}
               disabled={isLoadingOptions || !currentStory || currentStory.content.length === 0}
-              className="w-full py-3 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50"
+              className="w-full py-3 px-4 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-gray-800"
             >
               生成故事选项
             </button>
             
-            <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  字数设置
-                </label>
-                <select
-                  value={wordCount}
-                  onChange={(e) => setWordCount(Number(e.target.value))}
-                  className="w-full p-2 border border-gray-300 rounded-md"
-                >
-                  <option value={250}>短 (约250字)</option>
-                  <option value={500}>中 (约500字)</option>
-                  <option value={750}>长 (约750字)</option>
-                  <option value={1000}>超长 (约1000字)</option>
-                </select>
-              </div>
-              
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  AI提供商
-                </label>
-                <div className="flex space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
-                    className={`flex-1 py-2 px-2 sm:px-4 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      getApiProvider() === ApiProvider.DEEPSEEK 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    Deepseek
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
-                    className={`flex-1 py-2 px-2 sm:px-4 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                      getApiProvider() === ApiProvider.GOOGLE 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-                    }`}
-                  >
-                    Google
-                  </button>
-                </div>
-              </div>
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                字数设置
+              </label>
+              <select
+                value={wordCount}
+                onChange={(e) => setWordCount(Number(e.target.value))}
+                className="w-full p-2 border border-gray-600 bg-gray-800 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value={250}>短 (约250字)</option>
+                <option value={500}>中 (约500字)</option>
+                <option value={750}>长 (约750字)</option>
+                <option value={1000}>超长 (约1000字)</option>
+              </select>
             </div>
           </div>
         )}

@@ -88,11 +88,11 @@ export default function Home() {
 
   // 顶部导航栏
   const NavBar = () => (
-    <div className="bg-white shadow-sm rounded-lg mb-8 p-4 flex justify-between items-center">
+    <div className="bg-gray-800 dark:bg-gray-800 text-white shadow-md rounded-lg mb-4 sm:mb-8 p-3 sm:p-4 flex justify-between items-center border border-gray-700">
       <div className="flex items-center">
-        <h1 className="text-xl font-bold">AI小说世界</h1>
+        <h1 className="text-xl font-bold text-white">AI小说世界</h1>
         {currentCharacter && (
-          <span className="ml-4">
+          <span className="ml-2 sm:ml-4 text-sm sm:text-base text-gray-300">
             角色: {currentCharacter.name}
           </span>
         )}
@@ -102,7 +102,7 @@ export default function Home() {
         {currentStep !== 'login' && currentStep !== 'character' && (
           <button
             onClick={() => setCurrentStep('character')}
-            className="mr-4 text-primary-color hover:underline"
+            className="mr-2 sm:mr-4 text-sm sm:text-base text-indigo-400 hover:text-indigo-300 hover:underline"
           >
             返回角色选择
           </button>
@@ -114,7 +114,7 @@ export default function Home() {
                 reset();
               }
             }}
-            className="text-red-600 hover:text-red-800"
+            className="text-sm sm:text-base text-red-400 hover:text-red-300"
           >
             退出登录
           </button>
@@ -126,7 +126,7 @@ export default function Home() {
   // 如果用户未登录，显示登录表单
   if (!user) {
     return (
-      <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+      <main className="min-h-screen py-4 sm:py-12 px-2 sm:px-6 animate-fade-in">
         <LoginForm />
         <ThemeToggle />
       </main>
@@ -134,46 +134,46 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="min-h-screen py-2 sm:py-8 px-1 sm:px-6 animate-fade-in">
+      <div className="w-full max-w-full sm:max-w-7xl mx-auto">
         <NavBar />
         
         {/* 根据当前步骤显示不同内容 */}
         {currentStep === 'character' && (
-          <div className="max-w-md mx-auto">
+          <div className="w-full max-w-full sm:max-w-md mx-auto animate-slide-in">
             <CharacterManager onCharacterSelected={handleCharacterSelected} />
           </div>
         )}
         
         {currentStep === 'story' && (
-          <div className="max-w-md mx-auto">
+          <div className="w-full max-w-full sm:max-w-md mx-auto animate-slide-in">
             <StoryList onStorySelected={handleStorySelected} />
-            <div className="mt-8">
+            <div className="mt-4 sm:mt-8">
               <StoryCreator onStoryCreated={handleStoryCreated} />
             </div>
           </div>
         )}
         
         {currentStep === 'game' && currentStory && (
-          <div>
+          <div className="animate-slide-in">
             {/* 标签切换 */}
-            <div className="bg-white shadow-sm rounded-lg mb-6">
-              <div className="flex border-b">
+            <div className="bg-gray-800 dark:bg-gray-800 text-white shadow-md rounded-lg mb-3 sm:mb-6 border border-gray-700">
+              <div className="flex border-b border-gray-700">
                 <button
-                  className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium ${
+                  className={`flex-1 py-2 sm:py-3 px-2 sm:px-4 text-center font-medium ${
                     activeTab === 'game'
-                      ? 'text-primary-color border-b-2 border-primary-color'
-                      : 'hover:text-primary-color'
+                      ? 'text-indigo-400 border-b-2 border-indigo-400'
+                      : 'hover:text-indigo-400 text-gray-300'
                   }`}
                   onClick={() => setActiveTab('game')}
                 >
                   故事游戏
                 </button>
                 <button
-                  className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium ${
+                  className={`flex-1 py-2 sm:py-3 px-2 sm:px-4 text-center font-medium ${
                     activeTab === 'viewer'
-                      ? 'text-primary-color border-b-2 border-primary-color'
-                      : 'hover:text-primary-color'
+                      ? 'text-indigo-400 border-b-2 border-indigo-400'
+                      : 'hover:text-indigo-400 text-gray-300'
                   }`}
                   onClick={() => setActiveTab('viewer')}
                 >

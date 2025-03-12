@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
-import { ApiProvider, Story } from '@/types';
-import { setApiProvider } from '@/lib/ai';
 import axios from 'axios';
 
 interface StoryListProps {
@@ -16,107 +14,50 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
   const [successMessage, setSuccessMessage] = useState('');
   
   const { 
+    user,
     currentCharacter, 
     setCurrentStory,
-    user,
-    setCurrentCharacter,
-    updateApiSettings,
     deleteStory
   } = useUserStore();
 
-  const handleSelectStory = (story: Story, characterId?: string) => {
-    // 清除任何消息
-    setError('');
-    setSuccessMessage('');
+  const handleSelectStory = (storyId: string) => {
+    if (!currentCharacter) return;
     
-    // 如果提供了角色ID且与当前角色不同，先切换角色
-    if (characterId && (!currentCharacter || currentCharacter.id !== characterId)) {
-      const character = user?.characters.find(c => c.id === characterId);
-      if (character) {
-        setCurrentCharacter(character);
+    const story = currentCharacter.stories.find(s => s.id === storyId);
+    if (story) {
+      setCurrentStory(story);
+      
+      if (onStorySelected) {
+        onStorySelected();
       }
-    }
-    
-    // 设置当前故事
-    setCurrentStory(story);
-    
-    // 始终触发回调，无论是否是相同的故事
-    if (onStorySelected) {
-      onStorySelected();
     }
   };
 
-  // 切换API提供商
-  const handleChangeApiProvider = async (provider: ApiProvider) => {
-    if (!user || !currentCharacter || currentCharacter.stories.length === 0) {
-      console.log('无法切换API提供商：用户、角色或故事不存在');
+  const handleDeleteStory = async (storyId: string) => {
+    if (!currentCharacter || !user) return;
+    
+    if (!window.confirm('确定要删除这个故事吗？此操作不可恢复。')) {
       return;
     }
     
     setIsLoading(true);
     setError('');
-    setSuccessMessage('');
-    
-    try {
-      console.log('切换API提供商:', provider);
-      
-      // 更新用户的API设置
-      updateApiSettings({ provider });
-      
-      // 设置AI服务的当前提供商
-      setApiProvider(provider);
-      
-      // 向服务器发送更新请求
-      const response = await axios.post('/api/auth/updateSettings', {
-        email: user.email,
-        apiSettings: { provider }
-      });
-      
-      if (response.data.success) {
-        console.log('API提供商更新成功:', response.data.data?.provider || provider);
-        // 显示成功消息，提示用户选择故事
-        setSuccessMessage(`AI提供商已更新为 ${provider}，请选择一个故事进入`);
-        setError(''); // 清除任何错误
-      } else {
-        console.error('API提供商更新失败:', response.data.error);
-        setError(response.data.error || 'API提供商更新失败');
-      }
-    } catch (error) {
-      console.error('更新API提供商时出错:', error);
-      setError('更新API提供商失败，请稍后再试');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 删除故事
-  const handleDeleteStory = async (storyId: string, characterId: string, event: React.MouseEvent) => {
-    // 阻止事件冒泡，避免触发故事选择
-    event.stopPropagation();
-    
-    if (!user?.email) {
-      setError('用户信息不完整，请重新登录');
-      return;
-    }
-    
-    // 添加删除确认
-    if (!window.confirm('确定要删除此故事吗？故事数据会被永久清除，可以在 完整故事 标签中导出故事内容。')) {
-      return;
-    }
-    
-    setError('');
-    setIsLoading(true);
     
     try {
       const response = await axios.post('/api/story/delete', {
+        characterId: currentCharacter.id,
         storyId,
-        characterId,
         email: user.email
       });
       
       if (response.data.success) {
-        // 更新本地状态
-        deleteStory(characterId, storyId);
+        deleteStory(currentCharacter.id, storyId);
+        setSuccessMessage('故事已成功删除');
+        
+        // 3秒后清除成功消息
+        setTimeout(() => {
+          setSuccessMessage('');
+        }, 3000);
       } else {
         setError(response.data.error || '删除故事失败');
       }
@@ -128,183 +69,79 @@ export default function StoryList({ onStorySelected }: StoryListProps) {
     }
   };
 
-  // 如果没有选择角色，显示所有角色的故事列表
-  if (!currentCharacter && user) {
-    return (
-      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">所有故事</h2>
-        
-        {user.characters.length === 0 ? (
-          <p className="text-gray-500 text-center py-4">请先创建一个角色</p>
-        ) : (
-          <div className="space-y-6">
-            {user.characters.map(character => (
-              <div key={character.id} className="space-y-3">
-                <h3 className="text-lg font-medium text-gray-700">{character.name}的故事</h3>
-                
-                {character.stories.length === 0 ? (
-                  <p className="text-gray-500 py-2">暂无故事</p>
-                ) : (
-                  <div className="space-y-2">
-                    {character.stories.map(story => (
-                      <div 
-                        key={story.id}
-                        className="p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-highlight-color transition-colors relative"
-                        onClick={() => handleSelectStory(story, character.id)}
-                      >
-                        <h4 className="font-medium text-gray-800">{story.title || '无标题故事'}</h4>
-                        <p className="text-sm text-gray-500 mt-1">
-                          关键词: {story.keywords.join(', ')}
-                        </p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          更新于: {new Date(story.updatedAt).toLocaleString()}
-                        </p>
-                        
-                        {/* 进入故事按钮 */}
-                        <div className="mt-3 flex justify-end">
-                          <button
-                            className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
-                            onClick={(e) => {
-                              e.stopPropagation(); // 防止触发父元素的点击事件
-                              handleSelectStory(story, character.id);
-                            }}
-                          >
-                            进入故事
-                          </button>
-                        </div>
-                        
-                        {/* 删除按钮 */}
-                        <button
-                          className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1"
-                          onClick={(e) => handleDeleteStory(story.id, character.id, e)}
-                          disabled={isLoading}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
-
   if (!currentCharacter) {
     return (
-      <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">我的故事</h2>
-        <p className="text-gray-500 text-center py-4">请先选择一个角色</p>
+      <div className="w-full max-w-full sm:max-w-md mx-auto p-4 sm:p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md">
+        <h2 className="text-xl sm:text-2xl font-bold text-center text-white mb-4 sm:mb-6">我的故事</h2>
+        <p className="text-center py-4 text-gray-300">请先选择一个角色</p>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">我的故事</h2>
-      
-      {/* 如果有故事，显示API提供商选择 */}
-      {currentCharacter.stories.length > 0 && user && (
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            选择AI提供商并开始创作
-          </label>
-          <div className="flex space-x-2 mb-4">
-            <button
-              type="button"
-              onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
-              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                user.apiSettings?.provider === ApiProvider.DEEPSEEK 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-            >
-              Deepseek
-            </button>
-            <button
-              type="button"
-              onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
-              className={`flex-1 py-2 px-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
-                user.apiSettings?.provider === ApiProvider.GOOGLE 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
-              }`}
-            >
-              Google
-            </button>
-          </div>
-        </div>
-      )}
+    <div className="w-full max-w-full sm:max-w-md mx-auto p-4 sm:p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md">
+      <h2 className="text-xl sm:text-2xl font-bold text-center text-white mb-4 sm:mb-6">我的故事</h2>
       
       {/* 成功消息 */}
       {successMessage && (
-        <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md">
+        <div className="mb-4 p-3 bg-green-800 text-green-200 rounded-md">
           {successMessage}
         </div>
       )}
       
-      {currentCharacter.stories.length === 0 ? (
-        <p className="text-gray-500 text-center py-4">您还没有创建任何故事</p>
-      ) : (
-        <div className="space-y-3">
-          {currentCharacter.stories.map(story => (
-            <div 
-              key={story.id}
-              className="p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-highlight-color transition-colors relative"
-              onClick={() => handleSelectStory(story)}
-            >
-              <h4 className="font-medium text-gray-800">{story.title || '无标题故事'}</h4>
-              <p className="text-sm text-gray-500 mt-1">
-                关键词: {story.keywords.join(', ')}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                更新于: {new Date(story.updatedAt).toLocaleString()}
-              </p>
-              
-              {/* 进入故事按钮 */}
-              <div className="mt-3 flex justify-end">
-                <button
-                  className="px-3 py-1 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors text-sm"
-                  onClick={(e) => {
-                    e.stopPropagation(); // 防止触发父元素的点击事件
-                    handleSelectStory(story);
-                  }}
-                >
-                  进入故事
-                </button>
-              </div>
-              
-              {/* 删除按钮 */}
-              <button
-                className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1"
-                onClick={(e) => handleDeleteStory(story.id, currentCharacter.id, e)}
-                disabled={isLoading}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      
-      {/* 错误提示 */}
+      {/* 错误消息 */}
       {error && (
-        <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">
+        <div className="mb-4 p-3 bg-red-800 text-red-200 rounded-md">
           {error}
         </div>
       )}
       
-      {/* 加载状态 */}
-      {isLoading && (
-        <div className="mt-4 p-3 bg-blue-100 text-blue-700 rounded-md">
-          处理中...
+      {currentCharacter.stories.length === 0 ? (
+        <div className="text-center py-4">
+          <p className="text-gray-300 mb-4">您还没有创建任何故事</p>
+          <p className="text-sm text-gray-400">请使用下方的&quot;创建新故事&quot;功能开始您的创作之旅</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {currentCharacter.stories.map(story => (
+            <div key={story.id} className="story-card p-4 rounded-lg border border-gray-600 bg-gray-700 hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-medium text-lg mb-1 text-white">{story.title}</h4>
+                  <p className="text-sm text-gray-400 mb-2">
+                    创建于: {story.createdAt}
+                  </p>
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {story.keywords.map((keyword, index) => (
+                      <span 
+                        key={index}
+                        className="inline-block px-2 py-1 bg-gray-600 text-gray-200 text-xs rounded-full"
+                      >
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteStory(story.id)}
+                  disabled={isLoading}
+                  className="text-red-400 hover:text-red-300 p-1"
+                  aria-label="删除故事"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+              <button
+                onClick={() => handleSelectStory(story.id)}
+                disabled={isLoading}
+                className="w-full mt-2 py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 transition-colors"
+              >
+                继续这个故事
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
