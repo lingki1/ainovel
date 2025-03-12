@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
 import LoadingIndicator from './LoadingIndicator';
@@ -16,6 +16,7 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showApiProviderInfo, setShowApiProviderInfo] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const { 
     user,
@@ -32,6 +33,13 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
       setApiProvider(user.apiSettings.provider);
     }
   }, [user]);
+
+  // 当组件挂载时滚动到顶部
+  useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, []);
 
   // 切换API提供商
   const handleChangeApiProvider = async (provider: ApiProvider) => {
@@ -136,11 +144,10 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
   };
 
   return (
-    <div className="w-full max-w-full sm:max-w-md mx-auto p-4 sm:p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md">
+    <div ref={containerRef} className="w-full max-w-md mx-auto p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md border border-gray-700">
+      <h2 className="text-2xl font-bold text-center mb-6 text-white">创建新故事</h2>
+      
       <div className="flex justify-between items-center mb-4 sm:mb-6">
-        <h2 className="text-xl sm:text-2xl font-bold text-white">创建新故事</h2>
-        
-        {/* API提供商选择 */}
         <div className="relative">
           <button
             onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
@@ -184,7 +191,6 @@ export default function StoryCreator({ onStoryCreated }: StoryCreatorProps) {
         </div>
       </div>
       
-      {/* 加载提示 */}
       <LoadingIndicator 
         isLoading={isLoading} 
         message="创建故事中"

@@ -9,6 +9,7 @@ import StoryList from '@/components/StoryList';
 import StoryViewer from '@/components/StoryViewer';
 import StoryGame from '@/components/StoryGame';
 import ThemeToggle from '@/components/ThemeToggle';
+import TutorialModal from '@/components/TutorialModal';
 
 // 定义应用程序步骤
 type AppStep = 'login' | 'character' | 'story' | 'game';
@@ -17,6 +18,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<'game' | 'viewer'>('game');
   const [isClient, setIsClient] = useState(false);
   const [currentStep, setCurrentStep] = useState<AppStep>('login');
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   
   const { 
     user, 
@@ -86,19 +88,38 @@ export default function Home() {
     );
   }
 
-  // 顶部导航栏
+  // 导航栏组件
   const NavBar = () => (
-    <div className="bg-gray-800 dark:bg-gray-800 text-white shadow-md rounded-lg mb-4 sm:mb-8 p-3 sm:p-4 flex justify-between items-center border border-gray-700">
-      <div className="flex items-center">
-        <h1 className="text-xl font-bold text-white">AI小说世界</h1>
-        {currentCharacter && (
-          <span className="ml-2 sm:ml-4 text-sm sm:text-base text-gray-300">
-            角色: {currentCharacter.name}
-          </span>
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-700">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4 sm:mb-0">
+        <h1 className="text-2xl font-bold text-white mr-6">AI小说世界</h1>
+        
+        {currentStep === 'game' && (
+          <div className="flex mt-2 sm:mt-0">
+            <button
+              onClick={() => setActiveTab('game')}
+              className={`mr-4 ${activeTab === 'game' ? 'text-indigo-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              游戏模式
+            </button>
+            <button
+              onClick={() => setActiveTab('viewer')}
+              className={`${activeTab === 'viewer' ? 'text-indigo-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
+            >
+              完整故事
+            </button>
+          </div>
         )}
       </div>
       
       <div className="flex items-center">
+        <button
+          onClick={() => setIsTutorialOpen(true)}
+          className="mr-4 text-sm sm:text-base text-green-400 hover:text-green-300 hover:underline"
+        >
+          游戏教程
+        </button>
+        
         {currentStep !== 'login' && currentStep !== 'character' && (
           <button
             onClick={() => setCurrentStep('character')}
@@ -137,6 +158,9 @@ export default function Home() {
     <main className="min-h-screen py-2 sm:py-8 px-1 sm:px-6 animate-fade-in">
       <div className="w-full max-w-full sm:max-w-7xl mx-auto">
         <NavBar />
+        
+        {/* 教程模态框 */}
+        <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
         
         {/* 根据当前步骤显示不同内容 */}
         {currentStep === 'character' && (
