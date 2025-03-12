@@ -57,10 +57,10 @@ export const useUserStore = create<UserState>()(
           user: state.user 
             ? { 
                 ...state.user, 
-                apiSettings: {
-                  ...state.user.apiSettings,
-                  ...apiSettings
-                }
+                apiSettings: { 
+                  ...state.user.apiSettings, 
+                  ...apiSettings 
+                } 
               } 
             : null
         })),

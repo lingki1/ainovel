@@ -79,4 +79,12 @@ export const deleteUser = (email: string): boolean => {
   const data = readUserData();
   data.users = data.users.filter(u => u.email !== email);
   return writeUserData(data);
+};
+
+/**
+ * 获取所有用户
+ */
+export const getAllUsers = (): User[] => {
+  const data = readUserData();
+  return data.users;
 }; 

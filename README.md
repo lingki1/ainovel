@@ -84,9 +84,9 @@ npm run build
 pm2 restart ainovel
 
 2. 创建环境变量文件
-```bash
-echo "NEXT_PUBLIC_DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f" > .env.local
+```bashecho "NEXT_PUBLIC_DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f" > .env.local
 echo "NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0" >> .env.local
+
 ```
 
 3. 构建应用

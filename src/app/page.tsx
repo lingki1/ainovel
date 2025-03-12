@@ -28,7 +28,10 @@ export default function Home() {
   // 确保在客户端渲染
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    // 强制用户每次打开网页时都需要重新登录
+    reset();
+  }, [reset]);
 
   // 当用户状态变化时更新步骤
   useEffect(() => {
