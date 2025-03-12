@@ -1,0 +1,94 @@
+# AI小说世界 - VPS部署指南
+
+## 部署步骤
+
+1. 将项目代码复制到VPS的 `/var/www/ainovel` 目录下
+
+2. 安装依赖：
+   ```bash
+   cd /var/www/ainovel
+   npm install
+   ```
+
+3. 创建环境配置文件：
+   ```bash
+   cp vps-env-example.txt .env.local
+   nano .env.local  # 或使用其他编辑器
+   ```
+
+4. 配置API密钥：
+   - 编辑 `.env.local` 文件
+   - 替换 `your_deepseek_api_key_here` 为您的Deepseek API密钥
+   - 替换 `your_google_api_key_here` 为您的Google API密钥
+   - 保存文件
+
+5. 构建应用：
+   ```bash
+   npm run build
+   ```
+
+6. 启动应用：
+   ```bash
+   npm start
+   ```
+
+## 使用PM2持久化运行
+
+1. 安装PM2：
+   ```bash
+   npm install -g pm2
+   ```
+
+2. 使用PM2启动应用：
+   ```bash
+   cd /var/www/ainovel
+   pm2 start npm --name "ainovel" -- start
+   ```
+
+3. 设置PM2开机自启：
+   ```bash
+   pm2 startup
+   pm2 save
+   ```
+
+## 常见问题解决
+
+### 401 Unauthorized 错误
+
+如果在日志中看到401错误，通常表示API密钥无效或已过期：
+
+1. 检查 `.env.local` 文件中的API密钥是否正确
+2. 确认API密钥没有过期
+3. 验证API密钥是否有足够的配额
+4. 检查API服务是否在您的地区可用
+
+### 查看日志
+
+查看应用日志：
+```bash
+# 如果使用PM2
+pm2 logs ainovel
+
+# 如果直接运行
+cd /var/www/ainovel
+npm start
+```
+
+### 重启应用
+
+如果需要重启应用：
+```bash
+# 如果使用PM2
+pm2 restart ainovel
+
+# 如果直接运行
+cd /var/www/ainovel
+npm start
+```
+
+## 注意事项
+
+1. 确保VPS防火墙允许3000端口访问（默认端口）
+2. 如果使用Nginx或Apache作为反向代理，请配置相应的代理规则
+3. 建议使用HTTPS保护API密钥和用户数据
+4. 定期备份 `/var/www/ainovel/data` 目录，其中包含用户数据 

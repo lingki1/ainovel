@@ -1,13 +1,23 @@
 import fs from 'fs';
 import path from 'path';
-import { User } from '@/types';
+import { User, Story } from '@/types';
 
 // 数据文件路径
 const DATA_FILE_PATH = path.join(process.cwd(), 'public/data/users.json');
+// 数据目录路径
+const DATA_DIR = path.join(process.cwd(), 'public/data');
 
 // 数据结构
 interface DataStore {
   users: User[];
+}
+
+// 分享故事类型
+interface SharedStory {
+  id: string;
+  story: Story;
+  authorName: string;
+  createdAt: string;
 }
 
 /**
@@ -87,4 +97,69 @@ export const deleteUser = (email: string): boolean => {
 export const getAllUsers = (): User[] => {
   const data = readUserData();
   return data.users;
-}; 
+};
+
+// 保存分享的故事
+export async function saveSharedStory(shareId: string, story: Story, authorName: string): Promise<SharedStory> {
+  try {
+    // 确保数据目录存在
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+    
+    // 创建分享故事对象
+    const sharedStory: SharedStory = {
+      id: shareId,
+      story,
+      authorName,
+      createdAt: new Date().toISOString()
+    };
+    
+    // 获取现有的分享故事数据
+    let sharedStories: SharedStory[] = [];
+    try {
+      const sharedStoriesData = fs.readFileSync(path.join(DATA_DIR, 'shared-stories.json'), 'utf8');
+      sharedStories = JSON.parse(sharedStoriesData);
+    } catch {
+      // 如果文件不存在或解析失败，使用空数组
+      sharedStories = [];
+    }
+    
+    // 添加新的分享故事
+    sharedStories.push(sharedStory);
+    
+    // 保存更新后的分享故事数据
+    fs.writeFileSync(
+      path.join(DATA_DIR, 'shared-stories.json'),
+      JSON.stringify(sharedStories, null, 2),
+      'utf8'
+    );
+    
+    return sharedStory;
+  } catch (error) {
+    console.error('保存分享故事失败:', error);
+    throw error;
+  }
+}
+
+// 获取分享的故事
+export function getSharedStory(shareId: string): SharedStory | null {
+  try {
+    // 获取所有分享故事
+    let sharedStories: SharedStory[] = [];
+    try {
+      const sharedStoriesData = fs.readFileSync(path.join(DATA_DIR, 'shared-stories.json'), 'utf8');
+      sharedStories = JSON.parse(sharedStoriesData);
+    } catch {
+      // 如果文件不存在或解析失败，使用空数组
+      return null;
+    }
+    
+    // 查找指定ID的分享故事
+    const sharedStory = sharedStories.find((story) => story.id === shareId);
+    return sharedStory || null;
+  } catch (error) {
+    console.error('获取分享故事失败:', error);
+    return null;
+  }
+} 

@@ -1,0 +1,14 @@
+# VPS部署环境配置示例
+# 将此文件复制到/var/www/ainovel/.env.local
+
+# Deepseek API密钥 (必须配置)
+NEXT_PUBLIC_DEEPSEEK_API_KEY=your_deepseek_api_key_here
+
+# Google API密钥 (必须配置)
+NEXT_PUBLIC_GOOGLE_API_KEY=your_google_api_key_here
+
+# 注意：
+# 1. 这些API密钥会在客户端使用，因此使用NEXT_PUBLIC_前缀
+# 2. 在VPS上部署时，确保这些密钥有效且有足够的配额
+# 3. 401错误通常表示API密钥无效或已过期
+# 4. 如果只使用一种API，也需要为另一种提供一个占位符值 

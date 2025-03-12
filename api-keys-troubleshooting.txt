@@ -1,0 +1,92 @@
+# AI小说世界 - API密钥问题排查指南
+
+## 401 Unauthorized 错误排查
+
+如果您在VPS日志中看到401错误，这通常表示API密钥认证失败。以下是排查步骤：
+
+### 1. 检查环境配置文件
+
+确保在 `/var/www/ainovel/.env.local` 文件中正确配置了API密钥：
+
+```
+NEXT_PUBLIC_DEEPSEEK_API_KEY=your_actual_deepseek_api_key
+NEXT_PUBLIC_GOOGLE_API_KEY=your_actual_google_api_key
+```
+
+### 2. 验证API密钥有效性
+
+#### Deepseek API密钥
+- 访问 Deepseek 开发者控制台检查密钥状态
+- 确认密钥没有过期
+- 验证密钥格式是否正确（通常以 `sk-` 开头）
+- 检查密钥是否有足够的配额
+
+#### Google API密钥
+- 访问 Google Cloud Console 检查密钥状态
+- 确认已启用 Gemini API
+- 验证密钥没有使用限制
+- 检查密钥是否有计费账户关联（如需要）
+
+### 3. 检查API服务可用性
+
+- 确认您的VPS所在地区可以访问这些API服务
+- 某些地区可能需要使用代理才能访问这些服务
+- 检查服务提供商的状态页面，确认服务正常运行
+
+### 4. 测试API密钥
+
+可以使用以下命令测试API密钥：
+
+#### Deepseek API测试
+```bash
+curl -X POST https://api.deepseek.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_DEEPSEEK_API_KEY" \
+  -d '{
+    "model": "deepseek-chat",
+    "messages": [{"role": "user", "content": "Hello"}],
+    "temperature": 0.7,
+    "max_tokens": 100
+  }'
+```
+
+#### Google Gemini API测试
+```bash
+curl -X POST "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=YOUR_GOOGLE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "contents": [{"parts":[{"text": "Hello"}]}]
+  }'
+```
+
+### 5. 重建和重启应用
+
+更新API密钥后，需要重新构建和重启应用：
+
+```bash
+cd /var/www/ainovel
+npm run build
+# 如果使用PM2
+pm2 restart ainovel
+# 如果直接运行
+npm start
+```
+
+### 6. 检查日志
+
+查看详细错误信息：
+
+```bash
+# 如果使用PM2
+pm2 logs ainovel
+# 或者查看Next.js日志
+cd /var/www/ainovel
+npm start
+```
+
+## 注意事项
+
+1. API密钥在客户端可见，建议设置适当的域名限制和使用配额
+2. 使用HTTPS保护API请求
+3. 定期轮换API密钥以提高安全性
+4. 考虑使用环境变量而不是直接在文件中硬编码密钥 
