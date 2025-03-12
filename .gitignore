@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 D:\ainovel\public\data\users.json
+D:\ainovel\public\data\shared-stories.json

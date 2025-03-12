@@ -84,8 +84,8 @@ npm run build
 pm2 restart ainovel
 
 2. 创建环境变量文件
-```bashecho "NEXT_PUBLIC_DEEPSEEK_API_KEY=sk-e7fec72e5ad142c6a2fb1d2d3b2fa79f" > .env.local
-echo "NEXT_PUBLIC_GOOGLE_API_KEY=AIzaSyBCk9MqZVQDyAjzm_qlNML8GYCzTY_FEA0" >> .env.local
+```bashecho "NEXT_PUBLIC_DEEPSEEK_API_KEY=you key here" > .env.local
+echo "NEXT_PUBLIC_GOOGLE_API_KEY=you key here" >> .env.local
 
 ```
 
@@ -136,13 +136,15 @@ git commit -m ""
 git push origin maian
 
 #服务器
-备份 users.json
+备份 users.json 
 cp /var/www/ainovel/public/data/users.json /var/www/ainovel/public/data/users.json.backup
+cp /var/www/ainovel/public/data/shared-stories.json /var/www/ainovel/public/data/shared-stories.json.backup
 丢弃本地修改：
 git reset --hard HEAD  # 重置所有未提交的更改
 git pull origin main   # 拉取更新
 恢复 users.json
 mv /var/www/ainovel/public/data/users.json.backup /var/www/ainovel/public/data/users.json
+mv /var/www/ainovel/public/data/shared-stories.json.backup /var/www/ainovel/public/data/shared-stories.json
 
 ## 使用指南
 
