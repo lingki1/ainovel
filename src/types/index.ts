@@ -13,6 +13,14 @@ export enum ApiProvider {
   GOOGLE = 'google'
 }
 
+// 用户偏好接口
+export interface UserPreference {
+  id: string;
+  name: string;
+  value: string;
+  description: string;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -73,4 +81,17 @@ export interface StoryChoiceRequest {
   storyId: string;
   choice: string;
   wordCount: number;
+}
+
+// 用户反馈请求接口
+export interface UserFeedbackRequest {
+  storyId: string;
+  feedback: string;
+  rating?: number; // 1-5星评分
+}
+
+// 用户偏好设置请求接口
+export interface UserPreferenceRequest {
+  preferenceName: string;
+  preferenceValue: string;
 } 

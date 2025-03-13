@@ -71,7 +71,11 @@ export default function Home() {
     if (currentStory && currentStep === 'game') {
       const storyContentElement = document.getElementById('story-content');
       if (storyContentElement) {
-        storyContentElement.scrollTop = storyContentElement.scrollHeight;
+        // 使用setTimeout确保DOM已完全更新
+        setTimeout(() => {
+          storyContentElement.scrollTop = storyContentElement.scrollHeight;
+          console.log('主页组件：滚动到故事底部');
+        }, 100);
       }
     }
   }, [currentStory, currentStep]);
@@ -93,26 +97,11 @@ export default function Home() {
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 pb-4 border-b border-gray-700">
       <div className="flex flex-col sm:flex-row items-start sm:items-center mb-4 sm:mb-0">
         <h1 className="text-2xl font-bold text-white mr-6">AI小说世界</h1>
-        
-        {currentStep === 'game' && (
-          <div className="flex mt-2 sm:mt-0">
-            <button
-              onClick={() => setActiveTab('game')}
-              className={`mr-4 ${activeTab === 'game' ? 'text-indigo-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
-            >
-              游戏模式
-            </button>
-            <button
-              onClick={() => setActiveTab('viewer')}
-              className={`${activeTab === 'viewer' ? 'text-indigo-400 font-medium' : 'text-gray-400 hover:text-gray-300'}`}
-            >
-              完整故事
-            </button>
-          </div>
-        )}
       </div>
       
       <div className="flex items-center">
+
+        
         <button
           onClick={() => setIsTutorialOpen(true)}
           className="mr-4 text-sm sm:text-base text-green-400 hover:text-green-300 hover:underline"
@@ -191,7 +180,7 @@ export default function Home() {
                   }`}
                   onClick={() => setActiveTab('game')}
                 >
-                  故事游戏
+                  创作模式
                 </button>
                 <button
                   className={`flex-1 py-2 sm:py-3 px-2 sm:px-4 text-center font-medium ${

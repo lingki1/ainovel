@@ -3,9 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useUserStore } from '@/lib/store/userStore';
 import axios from 'axios';
-import { formatDate } from '@/utils';
 import { ApiProvider } from '@/types';
-import { setApiProvider, getApiProvider } from '@/lib/ai';
+import { setApiProvider, getApiProvider, UserPreference } from '@/lib/ai';
+import UserPreferences from './UserPreferences';
 import LoadingIndicator from './LoadingIndicator';
 
 export default function StoryGame() {
@@ -18,6 +18,7 @@ export default function StoryGame() {
   const [showCustomOption, setShowCustomOption] = useState(false);
   const [lastContentId, setLastContentId] = useState<string | null>(null);
   const [showApiProviderInfo, setShowApiProviderInfo] = useState(false);
+  const [showPreferences, setShowPreferences] = useState(false);
   
   // 故事内容滚动区域的引用
   const storyContentRef = useRef<HTMLDivElement>(null);
@@ -48,251 +49,359 @@ export default function StoryGame() {
         const lastContentIndex = currentStory.content.findIndex(item => item.id === lastContentId);
         if (lastContentIndex >= 0 && lastContentIndex < currentStory.content.length - 1) {
           // 找到新内容的DOM元素
-          const newContentElement = document.getElementById(currentStory.content[lastContentIndex + 1].id);
-          if (newContentElement) {
+          if (shouldScrollToNewContent) {
+            // 使用setTimeout确保DOM已经完全渲染
             setTimeout(() => {
-              newContentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }, 100);
+              if (newContentRef.current) {
+                console.log('尝试滚动到新内容:', newContentRef.current);
+                newContentRef.current.scrollIntoView({ 
+                  behavior: 'smooth', 
+                  block: 'start' 
+                });
+                console.log('滚动到新内容完成');
+              } else {
+                console.warn('无法找到新内容元素');
+                // 如果找不到新内容元素，则滚动到故事内容的底部
+                if (storyContentRef.current) {
+                  storyContentRef.current.scrollTop = storyContentRef.current.scrollHeight;
+                  console.log('滚动到故事底部');
+                }
+              }
+              setShouldScrollToNewContent(false);
+            }, 300); // 增加延迟时间，确保DOM完全渲染
           }
         }
       }
     }
-  }, [currentStory?.content, lastContentId]);
+  }, [currentStory, lastContentId, shouldScrollToNewContent]);
 
-  // 处理滚动到新内容
-  useEffect(() => {
-    if (shouldScrollToNewContent && newContentRef.current) {
-      setTimeout(() => {
-        if (newContentRef.current) {
-          newContentRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-      setShouldScrollToNewContent(false);
+  // 处理用户偏好变更
+  const handlePreferenceChange = (preferences: UserPreference[]) => {
+    // 只记录日志，不保存状态
+    console.log('用户偏好已更新:', preferences);
+  };
+
+  // 渲染故事内容
+  const renderStoryContent = () => {
+    if (!currentStory || !currentCharacter) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            请先创建一个角色和故事，然后开始你的冒险！
+          </p>
+        </div>
+      );
     }
-  }, [shouldScrollToNewContent]);
 
+    if (currentStory.content.length === 0) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-gray-500 dark:text-gray-400">
+            故事即将开始，点击下方按钮生成故事选项...
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div 
+        ref={storyContentRef}
+        className="prose prose-sm md:prose-base lg:prose-lg dark:prose-invert max-w-none overflow-y-auto max-h-[60vh] pb-4"
+        id="story-content"
+      >
+        {currentStory.content.map((content, index) => {
+          const isLastContent = index === currentStory.content.length - 1;
+          const isNewContent = content.id === lastContentId || 
+                              (lastContentId && index === currentStory.content.findIndex(item => item.id === lastContentId) + 1);
+          
+          return (
+            <div 
+              key={content.id} 
+              ref={isNewContent && index === currentStory.content.findIndex(item => item.id === lastContentId) + 1 ? newContentRef : null}
+              className={`mb-6 ${isNewContent ? 'animate-fadeIn bg-gray-700 bg-opacity-20 p-2 rounded' : ''}`}
+              id={isNewContent && index === currentStory.content.findIndex(item => item.id === lastContentId) + 1 ? 'new-content' : undefined}
+            >
+              {content.type === 'ai' ? (
+                <div className="whitespace-pre-wrap">{content.text}</div>
+              ) : (
+                <div className="my-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-md border-l-4 border-blue-500 italic">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">你选择了:</p>
+                  <p className="font-medium">{content.selectedChoice}</p>
+                </div>
+              )}
+              
+              {!isLastContent && (
+                <div className="border-b border-gray-200 dark:border-gray-700 my-6"></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // 生成故事选项
   const handleGenerateOptions = async () => {
-    if (!currentStory || !currentCharacter || !user) return;
-    
-    setError('');
-    setIsLoadingOptions(true);
-    setShowCustomOption(false);
-    
+    if (!currentStory || !currentCharacter || !user) {
+      setError('请先创建角色和故事');
+      return;
+    }
+
     try {
-      // 确保使用当前选择的API提供商
-      console.log('生成选项前的API提供商:', getApiProvider());
+      setIsLoadingOptions(true);
+      setError('');
       
+      console.log('发送生成选项请求，故事ID:', currentStory.id);
+
       const response = await axios.post('/api/story/options', {
         storyContent: currentStory.content,
-        characterName: currentCharacter.name,
-        email: user.email,
         characterId: currentCharacter.id,
-        storyId: currentStory.id
+        storyId: currentStory.id,
+        email: user.email
       });
       
-      if (response.data.success && response.data.data) {
-        setOptions(response.data.data);
+      console.log('生成选项响应:', response.data);
+
+      if (response.data.success) {
+        setOptions(response.data.data.options);
       } else {
         setError(response.data.error || '生成选项失败');
       }
     } catch (error) {
-      console.error('生成选项失败:', error);
-      setError('生成选项失败，请稍后再试');
+      console.error('生成选项错误:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { 
+          response?: { 
+            data: unknown; 
+            status: number; 
+            headers: unknown 
+          }; 
+          request?: unknown;
+          message?: string;
+        };
+        
+        if (axiosError.response) {
+          console.error('错误响应数据:', axiosError.response.data);
+          console.error('错误状态码:', axiosError.response.status);
+        } else if (axiosError.request) {
+          console.error('请求未收到响应:', axiosError.request);
+        } else if (axiosError.message) {
+          console.error('错误消息:', axiosError.message);
+        }
+      }
+      setError('生成选项时发生错误，请稍后再试');
     } finally {
       setIsLoadingOptions(false);
     }
   };
 
+  // 选择故事选项
   const handleChooseOption = async (choice: string) => {
-    if (!currentStory || !currentCharacter || !user) return;
-    
-    setError('');
-    setIsLoadingContinue(true);
-    
+    if (!currentStory || !currentCharacter || !user) {
+      setError('请先创建角色和故事');
+      return;
+    }
+
     try {
-      // 确保使用当前选择的API提供商
-      console.log('继续故事前的API提供商:', getApiProvider());
-      
-      // 记录当前最后一个内容的ID，用于滚动定位
-      if (currentStory.content.length > 0) {
-        setLastContentId(currentStory.content[currentStory.content.length - 1].id);
+      setIsLoadingContinue(true);
+      setError('');
+
+      // 保存当前最后一个内容的ID，用于后续滚动定位
+      const lastContent = currentStory.content[currentStory.content.length - 1];
+      if (lastContent) {
+        console.log('设置最后内容ID:', lastContent.id);
+        setLastContentId(lastContent.id);
       }
       
+      console.log('发送继续故事请求，选择:', choice);
+
       const response = await axios.post('/api/story/continue', {
         storyContent: currentStory.content,
+        characterId: currentCharacter.id,
+        storyId: currentStory.id,
         choice,
         wordCount,
-        characterName: currentCharacter.name,
-        email: user.email,
-        characterId: currentCharacter.id,
-        storyId: currentStory.id
+        email: user.email
       });
       
-      if (response.data.success && response.data.data) {
-        const newContent = [...currentStory.content, ...response.data.data];
+      console.log('继续故事响应:', response.data);
+
+      if (response.data.success) {
+        // 更新故事内容
+        updateStory(currentCharacter.id, response.data.data.story);
         
-        const updatedStory = {
-          ...currentStory,
-          content: newContent,
-          updatedAt: formatDate()
-        };
-        
-        updateStory(currentCharacter.id, updatedStory);
+        // 清空选项并重置自定义选项状态
         setOptions([]);
-        setCustomOption('');
         setShowCustomOption(false);
+        setCustomOption('');
         
-        // 设置标志，指示需要滚动到新内容
-        setShouldScrollToNewContent(true);
+        // 设置滚动标志，触发滚动到新内容
+        console.log('设置滚动标志为true');
         
-        // 记录新添加的玩家选择内容ID，用于滚动定位
-        if (response.data.data.length > 0) {
-          setLastContentId(response.data.data[0].id);
-        }
+        // 使用setTimeout确保状态更新后再设置滚动标志
+        setTimeout(() => {
+          setShouldScrollToNewContent(true);
+        }, 100);
       } else {
         setError(response.data.error || '继续故事失败');
       }
     } catch (error) {
-      console.error('继续故事失败:', error);
-      setError('继续故事失败，请稍后再试');
+      console.error('继续故事错误:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { 
+          response?: { 
+            data: unknown; 
+            status: number; 
+            headers: unknown 
+          }; 
+          request?: unknown;
+          message?: string;
+        };
+        
+        if (axiosError.response) {
+          console.error('错误响应数据:', axiosError.response.data);
+          console.error('错误状态码:', axiosError.response.status);
+        } else if (axiosError.request) {
+          console.error('请求未收到响应:', axiosError.request);
+        } else if (axiosError.message) {
+          console.error('错误消息:', axiosError.message);
+        }
+      }
+      setError('继续故事时发生错误，请稍后再试');
     } finally {
       setIsLoadingContinue(false);
     }
   };
 
+  // 提交自定义选项
   const handleSubmitCustomOption = (e: React.FormEvent) => {
     e.preventDefault();
-    if (customOption.trim().length > 0) {
-      handleChooseOption(customOption);
+    if (customOption.trim()) {
+      handleChooseOption(customOption.trim());
     }
   };
 
   // 切换API提供商
   const handleChangeApiProvider = async (provider: ApiProvider) => {
-    if (!user) return;
-    
     try {
-      console.log('切换API提供商:', provider);
+      console.log('尝试切换API提供商:', provider);
       
-      // 更新用户的API设置
-      updateApiSettings({ provider });
-      
-      // 设置AI服务的当前提供商
+      // 先设置本地API提供商
       setApiProvider(provider);
       
-      // 向服务器发送更新请求
-      const response = await axios.post('/api/auth/updateSettings', {
-        email: user.email,
-        apiSettings: { provider }
-      });
-      
-      if (response.data.success) {
-        console.log('API提供商更新成功:', response.data.data.provider);
-        // 隐藏API提供商选择区域
-        setShowApiProviderInfo(false);
+      // 更新用户的API设置
+      if (user) {
+        // 更新本地状态
+        updateApiSettings({ provider });
+        
+        // 发送请求到服务器更新设置
+        const response = await axios.post('/api/auth/updateSettings', {
+          email: user.email,
+          apiSettings: { provider }
+        });
+        
+        if (response.data.success) {
+          console.log('API提供商更新成功:', response.data.data.provider);
+        } else {
+          console.error('API提供商更新失败:', response.data.error);
+          setError('更新API提供商失败: ' + response.data.error);
+        }
       } else {
-        console.error('API提供商更新失败:', response.data.error);
-        setError('更新API提供商失败');
+        console.warn('无法更新API提供商: 用户未登录');
+        setError('请先登录再更改API提供商');
       }
+      
+      setShowApiProviderInfo(false);
     } catch (error) {
-      console.error('更新API提供商时出错:', error);
-      setError('更新API提供商失败，请稍后再试');
+      console.error('切换API提供商错误:', error);
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { 
+          response?: { 
+            data: unknown; 
+            status: number; 
+          }; 
+          message?: string;
+        };
+        
+        if (axiosError.response) {
+          console.error('错误响应数据:', axiosError.response.data);
+          console.error('错误状态码:', axiosError.response.status);
+        } else if (axiosError.message) {
+          console.error('错误消息:', axiosError.message);
+        }
+      }
+      setError('切换API提供商时发生错误，请稍后再试');
     }
   };
 
-  if (!currentStory || !currentCharacter) {
-    return (
-      <div className="w-full max-w-2xl mx-auto p-6 bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center mb-6 text-white">故事游戏</h2>
-        <p className="text-center py-4 text-gray-300">请先选择一个故事</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-2xl mx-auto bg-gray-800 dark:bg-gray-800 text-white rounded-lg shadow-md overflow-hidden border border-gray-700">
-      {/* 加载提示 */}
+    <div className="container mx-auto px-4 py-8">
+      {/* 加载指示器 */}
       <LoadingIndicator 
-        isLoading={isLoadingOptions || isLoadingContinue} 
-        message={isLoadingOptions ? "生成故事选项中" : "续写故事中"}
+        isLoading={isLoadingOptions} 
+        message="正在生成故事选项..." 
+      />
+      <LoadingIndicator 
+        isLoading={isLoadingContinue} 
+        message="正在继续故事..." 
       />
       
-      {/* 标题栏 */}
-      <div className="p-4 border-b border-gray-700 flex justify-between items-center">
-        <h2 className="text-xl font-bold text-white">{currentStory.title || '无标题故事'}</h2>
+      {/* 标题和API提供商信息 */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold mb-4 md:mb-0">
+          {currentStory?.title || '开始你的故事'}
+        </h1>
         
-        {/* API提供商选择 - 移到右侧并使用下拉菜单样式 */}
-        <div className="relative">
+        <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+          {/* 用户偏好设置按钮 */}
           <button
-            onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
-            className="flex items-center text-sm px-3 py-1 rounded-md border border-gray-600 hover:bg-gray-700 text-white"
+            onClick={() => setShowPreferences(!showPreferences)}
+            className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
           >
-            <span>API: {user?.apiSettings?.provider || 'deepseek'}</span>
-            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            {showPreferences ? '隐藏偏好设置' : '故事偏好设置'}
           </button>
           
-          {showApiProviderInfo && (
-            <div className="absolute right-0 mt-1 w-48 bg-gray-700 rounded-md shadow-lg z-10 border border-gray-600">
-              <div className="p-3">
-                <p className="text-sm mb-2 text-gray-300">选择AI提供商:</p>
-                <div className="space-y-2">
+          {/* API提供商切换按钮 */}
+          <div className="relative">
+            <button
+              onClick={() => setShowApiProviderInfo(!showApiProviderInfo)}
+              className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            >
+              AI提供商: {getApiProvider()}
+            </button>
+            
+            {showApiProviderInfo && (
+              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+                <div className="py-1">
                   <button
                     onClick={() => handleChangeApiProvider(ApiProvider.DEEPSEEK)}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-md ${
-                      user?.apiSettings?.provider === ApiProvider.DEEPSEEK 
-                        ? 'bg-blue-600 text-white' 
-                        : 'hover:bg-gray-600 text-gray-200'
-                    }`}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Deepseek
                   </button>
                   <button
                     onClick={() => handleChangeApiProvider(ApiProvider.GOOGLE)}
-                    className={`w-full text-left px-3 py-2 text-sm rounded-md ${
-                      user?.apiSettings?.provider === ApiProvider.GOOGLE 
-                        ? 'bg-blue-600 text-white' 
-                        : 'hover:bg-gray-600 text-gray-200'
-                    }`}
+                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Google
                   </button>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
       
+      {/* 用户偏好设置面板 */}
+      {showPreferences && (
+        <div className="mb-6">
+          <UserPreferences onPreferenceChange={handlePreferenceChange} />
+        </div>
+      )}
+      
       {/* 故事内容 */}
-      <div 
-        id="story-content"
-        ref={storyContentRef}
-        className="p-4 h-[400px] sm:h-[500px] overflow-y-auto bg-gray-800 text-white"
-      >
-        {currentStory?.content.map((segment, index) => (
-          <div 
-            key={segment.id} 
-            id={segment.id}
-            className={`mb-6 ${
-              index === currentStory.content.length - 1 && shouldScrollToNewContent
-                ? 'animate-highlight'
-                : ''
-            }`}
-            ref={index === currentStory.content.length - 1 ? newContentRef : null}
-          >
-            {segment.text.split('\n').map((paragraph, i) => (
-              paragraph ? <p key={i} className="mb-4 text-gray-200">{paragraph}</p> : <br key={i} />
-            ))}
-            
-            {segment.selectedChoice && (
-              <div className="my-4 p-3 bg-gray-700 border-l-4 border-indigo-500 text-gray-200">
-                选择: {segment.selectedChoice}
-              </div>
-            )}
-          </div>
-        ))}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        {renderStoryContent()}
       </div>
       
       {/* 故事选项 */}
